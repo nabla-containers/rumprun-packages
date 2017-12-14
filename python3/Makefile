@@ -63,6 +63,33 @@ images/python.iso: build/python
 	mkdir -p images
 	$(RUMPRUN_GENISOIMAGE) -o images/python.iso build/pythondist/lib/python3.5
 
+python.fs: examples/main.py
+	rm -rf python
+	mkdir -p python/lib/
+	cp -r build/pythondist/lib/python3.5 python/lib/.
+	cp examples/main.py python/lib/python3.5/site-packages/.
+	x86_64-rumprun-netbsd-cookfs python.fs python
+
+.PHONY: run_hw
+run_hw: python.fs
+	rumprun-bake -m "add python.fs" hw_generic examples/python.bin build/python 
+	rumprun qemu -M 256 -i -g '-nographic -vga none' -e PYTHONHOME=/python -- examples/python.bin -m main
+
+.PHONY: run_ukvm
+run_ukvm: python.fs
+	rumprun-bake -m "add python.fs" solo5_net examples/python.bin build/python 
+	touch dummy
+	../ukvm-bin --disk=dummy --net=tap100 examples/python.bin '{"cmdline":"examples/python.bin -m main","env":"PYTHONHOME=/python","net":{"if":"ukvmif0","cloner":"True","type":"inet","method":"static","addr":"10.0.0.2","mask":"16"}}' 
+
+.PHONY: run_hw_fs
+run_hw_fs:
+	rumprun-bake hw_generic examples/python.bin build/python 
+	rumprun kvm -i -g '-nographic -vga none' \
+	   -b images/python.iso,/python/lib/python3.5 \
+	   -b examples/main.iso,/python/lib/python3.5/site-packages \
+	   -e PYTHONHOME=/python \
+	   -- examples/python.bin -m main
+
 .PHONY: clean
 clean:
 	-$(MAKE) -C build clean
