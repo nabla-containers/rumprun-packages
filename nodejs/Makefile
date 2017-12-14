@@ -59,6 +59,23 @@ clean:
 	ln -sf default.js rumpmain.js
 	$(MAKE) -C examples clean
 
+.PHONY: run_hw
+run_hw:
+	(cd examples/express-4.13.3; npm install --production)
+	(cd examples; \
+	x86_64-rumprun-netbsd-cookfs express-4.13.3.fs express-4.13.3; \
+	rumprun-bake -m "add express-4.13.3.fs" hw_generic ../build-4.3.0/out/Release/node-express-4.13.3.bin ../build-4.3.0/out/Release/node-default; \
+	rumprun kvm -M 256 -I if,vioif,"-net tap,script=no,ifname=tap100" -W if,inet,static,10.0.0.2/24 -i ../build-4.3.0/out/Release/node-express-4.13.3.bin /express-4.13.3/examples/hello-world/index.js )
+
+.PHONY: run_ukvm
+run_ukvm:
+	(cd examples/express-4.13.3; npm install --production)
+	(cd examples; \
+	x86_64-rumprun-netbsd-cookfs express-4.13.3.fs express-4.13.3; \
+	rumprun-bake -m "add express-4.13.3.fs" solo5_net ../build-4.3.0/out/Release/node-express-4.13.3.bin ../build-4.3.0/out/Release/node-default; \
+	touch dummy; \
+	../../ukvm-bin --mem=512 --disk=dummy --net=tap100 ../build-4.3.0/out/Release/node-express-4.13.3.bin '{"cmdline":"../build-4.3.0/out/Release/node-express-4.13.3.bin /express-4.13.3/examples/hello-world/index.js","net":{"if":"ukvmif0","cloner":"True","type":"inet","method":"static","addr":"10.0.0.2","mask":"16"}}' )
+
 .PHONY: distclean
 distclean:
 	rm -rf build-* dl
