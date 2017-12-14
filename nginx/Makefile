@@ -80,4 +80,17 @@ clean:
 distclean: clean
 	rm -rf build
 
+.PHONY: run_hw
+run_hw: bin/nginx
+	x86_64-rumprun-netbsd-cookfs data.fs data
+	rumprun-bake -m "add data.fs" hw_generic bin/nginx.bin bin/nginx
+	rumprun qemu -i -I if,vioif,"-net tap,script=no,ifname=tap100" -W if,inet,static,10.0.0.2/24 -- bin/nginx.bin -c /data/conf/nginx.conf
+
+.PHONY: run_ukvm
+run_ukvm: bin/nginx
+	x86_64-rumprun-netbsd-cookfs data.fs data
+	rumprun-bake -m "add data.fs" solo5_net bin/nginx.bin bin/nginx
+	touch dummy
+	../ukvm-bin --disk=dummy --net=tap100 bin/nginx.bin '{"cmdline":"-c/data/conf/nginx.conf","net":{"if":"ukvmif0","cloner":"True","type":"inet","method":"static","addr":"10.0.0.2","mask":"16"}}' 
+
 include ../Makefile.deps
