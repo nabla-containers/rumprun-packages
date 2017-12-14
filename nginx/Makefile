@@ -91,6 +91,6 @@ run_ukvm: bin/nginx
 	x86_64-rumprun-netbsd-cookfs data.fs data
 	rumprun-bake -m "add data.fs" solo5_net bin/nginx.bin bin/nginx
 	touch dummy
-	../ukvm-bin --disk=dummy --net=tap100 bin/nginx.bin '{"cmdline":"-c/data/conf/nginx.conf","net":{"if":"ukvmif0","cloner":"True","type":"inet","method":"static","addr":"10.0.0.2","mask":"16"}}' 
+	../ukvm-bin --disk=dummy --net=tap100 bin/nginx.bin '{"cmdline":"bin/nginx.bin -c /data/conf/nginx.conf","net":{"if":"ukvmif0","cloner":"True","type":"inet","method":"static","addr":"10.0.0.2","mask":"16"}}' 
 
 include ../Makefile.deps
