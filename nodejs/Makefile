@@ -73,7 +73,7 @@ run_ukvm:
 	(cd examples; time x86_64-rumprun-netbsd-cookfs express-4.13.3.fs express-4.13.3;)
 	(cd examples; rumprun-bake -m "add express-4.13.3.fs" solo5_net ../build-4.3.0/out/Release/node-express-4.13.3.bin ../build-4.3.0/out/Release/node-default;)
 	(cd examples; touch dummy; \
-	../../ukvm-bin --mem=512 --disk=dummy --net=tap100 ../build-4.3.0/out/Release/node-express-4.13.3.bin '{"cmdline":"../build-4.3.0/out/Release/node-express-4.13.3.bin /express-4.13.3/examples/authservice-node/authservice_app.js","env":"CUSTOMER_SERVICE=10.0.0.4:5000","net":{"if":"ukvmif0","cloner":"True","type":"inet","method":"static","addr":"10.0.0.2","mask":"16"}}')
+	../ukvm-bin --disk=dummy --net=tap100 ../build-4.3.0/out/Release/node-express-4.13.3.bin '{"cmdline":"../build-4.3.0/out/Release/node-express-4.13.3.bin /express-4.13.3/examples/authservice-node/authservice_app.js","env":"CUSTOMER_SERVICE=10.0.0.4:5000","net":{"if":"ukvmif0","cloner":"True","type":"inet","method":"static","addr":"10.0.0.2","mask":"16"}}')
 
 build-4.3.0/out/Release/node-authservice.ukvm: examples/authservice/authservice_app.js examples/authservice/authservice/routes/index.js
 	(cd examples/authservice; npm install)
@@ -83,7 +83,7 @@ build-4.3.0/out/Release/node-authservice.ukvm: examples/authservice/authservice_
 .PHONY: run_authservice
 run_authservice: build-4.3.0/out/Release/node-authservice.ukvm
 	(cd examples; touch dummy; \
-	../../ukvm-bin --mem=512 --disk=dummy --net=tap100 ../build-4.3.0/out/Release/node-authservice.ukvm '{"cmdline":"../build-4.3.0/out/Release/node-authservice.ukvm /authservice/authservice_app.js","env":"CUSTOMER_SERVICE=10.0.0.4:5000","net":{"if":"ukvmif0","cloner":"True","type":"inet","method":"static","addr":"10.0.0.2","mask":"16"}}')
+	../ukvm-bin --disk=dummy --net=tap100 ../build-4.3.0/out/Release/node-authservice.ukvm '{"cmdline":"../build-4.3.0/out/Release/node-authservice.ukvm /authservice/authservice_app.js","env":"CUSTOMER_SERVICE=10.0.0.4:5000","net":{"if":"ukvmif0","cloner":"True","type":"inet","method":"static","addr":"10.0.0.2","mask":"16"}}')
 
 .PHONY: distclean
 distclean:
