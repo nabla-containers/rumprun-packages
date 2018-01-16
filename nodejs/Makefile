@@ -85,6 +85,10 @@ run_authservice: build-4.3.0/out/Release/node-authservice.ukvm
 	(cd examples; touch dummy; \
 	../ukvm-bin --disk=dummy --net=tap100 ../build-4.3.0/out/Release/node-authservice.ukvm '{"cmdline":"../build-4.3.0/out/Release/node-authservice.ukvm /authservice/authservice_app.js","env":"CUSTOMER_SERVICE=10.0.0.4:5000","net":{"if":"ukvmif0","cloner":"True","type":"inet","method":"static","addr":"10.0.0.2","mask":"16"}}')
 
+.PHONY: run_gdb
+run_gdb: build-4.3.0/out/Release/node-authservice.ukvm
+	gdb --ex="b ukvm_elf_load" --ex="r --disk=dummy --net=tap100 build-4.3.0/out/Release/node-authservice.ukvm" --ex="finish" --ex="add-symbol-file build-4.3.0/out/Release/node-authservice.ukvm 0x100000" ./ukvm-bin
+
 .PHONY: distclean
 distclean:
 	rm -rf build-* dl
