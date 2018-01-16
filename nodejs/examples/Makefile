@@ -17,6 +17,16 @@ inject_ursa: | node_modules/nad ursa/node_modules/ursa
 run_ursa: ursa.iso
 	rumprun kvm -M 256 -i -b ursa.iso,/ursa ../$(NODE_BIN).bin /ursa/test.js
 
+node-authservice.ukvm: authservice/authservice_app.js authservice/authservice/routes/index.js
+	(cd authservice; npm install)
+	x86_64-rumprun-netbsd-cookfs authservice.fs authservice
+	rumprun-bake -m "add authservice.fs" solo5_net node-authservice.ukvm ../build-4.3.0/out/Release/node-default
+
+.PHONY: run_authservice
+run_authservice: node-authservice.ukvm
+	touch dummy
+	../ukvm-bin --disk=dummy --net=tap100 node-authservice.ukvm '{"cmdline":"node-authservice.ukvm /authservice/authservice_app.js","env":"CUSTOMER_SERVICE=10.0.0.4:5000","net":{"if":"ukvmif0","cloner":"True","type":"inet","method":"static","addr":"10.0.0.2","mask":"16"}}'
+
 .PHONY: inject_ghost
 inject_ghost: | node_modules/nad Ghost-$(GHOST_VERSION)
 	(cd Ghost-$(GHOST_VERSION)/node_modules/sqlite3; mv binding.gyp binding.gyp.orig; sed -e 's/<(module_name)/sqlite3/g' -e "s/sqlite !=/'internal' !=/" -e "s:\([^/]\)\(deps/\):\1$$PWD/\2:g" -e "s:\.\./:$$PWD/:g" binding.gyp.orig > binding.gyp; mv deps/sqlite3.gyp deps/sqlite3.gyp.orig; sed -e "s:\.\./:$$PWD/:g" deps/sqlite3.gyp.orig > deps/sqlite3.gyp; $(NAD) configure --nodedir ../../../../$(BUILD_DIR) && $(NAD) inject)
