@@ -25,7 +25,7 @@ node-authservice.ukvm: authservice/authservice_app.js authservice/authservice/ro
 .PHONY: run_authservice
 run_authservice: node-authservice.ukvm
 	touch dummy
-	../ukvm-bin --disk=dummy --net=tap100 node-authservice.ukvm '{"cmdline":"node-authservice.ukvm /authservice/authservice_app.js","env":"CUSTOMER_SERVICE=10.0.0.4:5000","net":{"if":"ukvmif0","cloner":"True","type":"inet","method":"static","addr":"10.0.0.2","mask":"16"}}'
+	../ukvm-bin.seccomp --disk=dummy --net=tap100 node-authservice.ukvm '{"cmdline":"node-authservice.ukvm /authservice/authservice_app.js","env":"CUSTOMER_SERVICE=10.0.0.4:5000","net":{"if":"ukvmif0","cloner":"True","type":"inet","method":"static","addr":"10.0.0.2","mask":"16"}}'
 
 .PHONY: inject_ghost
 inject_ghost: | node_modules/nad Ghost-$(GHOST_VERSION)

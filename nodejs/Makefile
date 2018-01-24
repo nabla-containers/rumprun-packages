@@ -73,7 +73,7 @@ run_ukvm:
 	(cd examples; time x86_64-rumprun-netbsd-cookfs express-4.13.3.fs express-4.13.3;)
 	(cd examples; rumprun-bake -m "add express-4.13.3.fs" solo5_net ../build-4.3.0/out/Release/node-express-4.13.3.bin ../build-4.3.0/out/Release/node-default;)
 	(cd examples; touch dummy; \
-	../ukvm-bin --disk=dummy --net=tap100 ../build-4.3.0/out/Release/node-express-4.13.3.bin '{"cmdline":"../build-4.3.0/out/Release/node-express-4.13.3.bin /express-4.13.3/examples/authservice-node/authservice_app.js","env":"CUSTOMER_SERVICE=10.0.0.4:5000","net":{"if":"ukvmif0","cloner":"True","type":"inet","method":"static","addr":"10.0.0.2","mask":"16"}}')
+	../ukvm-bin.seccomp --disk=dummy --net=tap100 ../build-4.3.0/out/Release/node-express-4.13.3.bin '{"cmdline":"../build-4.3.0/out/Release/node-express-4.13.3.bin /express-4.13.3/examples/authservice-node/authservice_app.js","env":"CUSTOMER_SERVICE=10.0.0.4:5000","net":{"if":"ukvmif0","cloner":"True","type":"inet","method":"static","addr":"10.0.0.2","mask":"16"}}')
 
 .PHONY: run_authservice
 run_authservice:
@@ -81,7 +81,7 @@ run_authservice:
 
 .PHONY: run_gdb
 run_gdb: build-4.3.0/out/Release/node-authservice.ukvm
-	gdb --ex="b ukvm_elf_load" --ex="r --disk=dummy --net=tap100 build-4.3.0/out/Release/node-authservice.ukvm" --ex="finish" --ex="add-symbol-file build-4.3.0/out/Release/node-authservice.ukvm 0x100000" ./ukvm-bin
+	gdb --ex="b ukvm_elf_load" --ex="r --disk=dummy --net=tap100 build-4.3.0/out/Release/node-authservice.ukvm" --ex="finish" --ex="add-symbol-file build-4.3.0/out/Release/node-authservice.ukvm 0x100000" ./ukvm-bin.seccomp
 
 .PHONY: distclean
 distclean:
