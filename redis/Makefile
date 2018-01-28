@@ -32,6 +32,12 @@ images/datapers.img:
 	dd if=/dev/zero of=$@ bs=1024k seek=$(PERSISTENCE_SIZE) count=0
 	mkfs.ext2 -F -q $@
 
+.PHONY:
+run_hw: bin/redis-server
+	x86_64-rumprun-netbsd-cookfs data.fs data
+	rumprun-bake -m "add data.fs" hw_generic bin/redis-server.bin bin/redis-server
+	rumprun qemu -i -g '-nographic -vga none' -M 256     -I if,vioif,'-net tap,script=no,ifname=tap100' -W if,inet,static,10.0.120.101/24 -- bin/redis-server.bin /data/conf/redis.conf
+
 .PHONY: clean
 clean:	clean/build clean/bin
 	
