@@ -62,10 +62,9 @@ clean:
 .PHONY: run_hw
 run_hw:
 	(cd examples/express-4.13.3; npm install --production)
-	(cd examples; \
-	x86_64-rumprun-netbsd-cookfs express-4.13.3.fs express-4.13.3; \
-	rumprun-bake -m "add express-4.13.3.fs" hw_generic ../build-4.3.0/out/Release/node-express-4.13.3.bin ../build-4.3.0/out/Release/node-default; \
-	rumprun kvm -M 256 -I if,vioif,"-net tap,script=no,ifname=tap100" -W if,inet,static,10.0.0.2/24 -i ../build-4.3.0/out/Release/node-express-4.13.3.bin /express-4.13.3/examples/hello-world/index.js )
+	(cd examples; x86_64-rumprun-netbsd-cookfs express-4.13.3.fs express-4.13.3 )
+	(cd examples; rumprun-bake -m "add express-4.13.3.fs" hw_generic ../build-4.3.0/out/Release/node-express-4.13.3.bin ../build-4.3.0/out/Release/node-default )
+	(cd examples; rumprun qemu -g '-nographic -vga none' -M 256 -I if,vioif,"-net tap,script=no,ifname=tap100" -W if,inet,static,10.0.0.2/24 -i ../build-4.3.0/out/Release/node-express-4.13.3.bin /express-4.13.3/examples/hello-world/index.js )
 
 .PHONY: run_ukvm
 run_ukvm:
@@ -78,6 +77,10 @@ run_ukvm:
 .PHONY: run_authservice
 run_authservice:
 	make -C examples run_authservice
+
+.PHONY: run_authservice_hw
+run_authservice_hw:
+	make -C examples run_authservice_hw
 
 .PHONY: run_gdb
 run_gdb: build-4.3.0/out/Release/node-authservice.ukvm

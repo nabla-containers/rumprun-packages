@@ -17,6 +17,12 @@ inject_ursa: | node_modules/nad ursa/node_modules/ursa
 run_ursa: ursa.iso
 	rumprun kvm -M 256 -i -b ursa.iso,/ursa ../$(NODE_BIN).bin /ursa/test.js
 
+node-authservice.bin: authservice/authservice_app.js authservice/authservice/routes/index.js
+	rumprun-bake hw_generic node-authservice.bin ../build-4.3.0/out/Release/node-default
+
+authservice.iso: authservice/authservice_app.js authservice/authservice/routes/index.js
+	genisoimage -l -r -o authservice.iso authservice
+
 node-authservice.ukvm: authservice/authservice_app.js authservice/authservice/routes/index.js
 	(cd authservice; npm install)
 	x86_64-rumprun-netbsd-cookfs authservice.fs authservice
@@ -26,6 +32,11 @@ node-authservice.ukvm: authservice/authservice_app.js authservice/authservice/ro
 run_authservice: node-authservice.ukvm
 	touch dummy
 	../ukvm-bin.seccomp --disk=dummy --net=tap100 node-authservice.ukvm '{"cmdline":"node-authservice.ukvm /authservice/authservice_app.js","env":"CUSTOMER_SERVICE=10.0.0.4:5000","net":{"if":"ukvmif0","cloner":"True","type":"inet","method":"static","addr":"10.0.0.2","mask":"16"}}'
+
+# 'rumprun qemu' doesn't work with node in memory file systems. Only 'rumprun kvm' does
+.PHONY: run_authservice_hw
+run_authservice_hw: node-authservice.bin authservice.iso
+	rumprun qemu -g '-nographic -vga none' -M 256 -I if,vioif,"-net tap,script=no,ifname=tap100" -W if,inet,static,10.0.0.2/24 -b authservice.iso,/authservice -i node-authservice.bin /authservice/authservice_app.js
 
 .PHONY: inject_ghost
 inject_ghost: | node_modules/nad Ghost-$(GHOST_VERSION)
