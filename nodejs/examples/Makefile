@@ -38,6 +38,11 @@ run_authservice: node-authservice.ukvm
 run_authservice_hw: node-authservice.bin authservice.iso
 	rumprun qemu -g '-nographic -vga none' -M 256 -I if,vioif,"-net tap,script=no,ifname=tap100" -W if,inet,static,10.0.0.2/24 -b authservice.iso,/authservice -i node-authservice.bin /authservice/authservice_app.js
 
+# 'rumprun qemu' doesn't work with node in memory file systems. Only 'rumprun kvm' does
+.PHONY: run_fib_hw
+run_fib_hw: node-authservice.bin authservice.iso
+	rumprun qemu -g '-nographic -vga none' -M 256 -I if,vioif,"-net tap,script=no,ifname=tap100" -W if,inet,static,10.0.0.2/24 -b authservice.iso,/authservice -i node-authservice.bin /authservice/fib.js
+
 .PHONY: inject_ghost
 inject_ghost: | node_modules/nad Ghost-$(GHOST_VERSION)
 	(cd Ghost-$(GHOST_VERSION)/node_modules/sqlite3; mv binding.gyp binding.gyp.orig; sed -e 's/<(module_name)/sqlite3/g' -e "s/sqlite !=/'internal' !=/" -e "s:\([^/]\)\(deps/\):\1$$PWD/\2:g" -e "s:\.\./:$$PWD/:g" binding.gyp.orig > binding.gyp; mv deps/sqlite3.gyp deps/sqlite3.gyp.orig; sed -e "s:\.\./:$$PWD/:g" deps/sqlite3.gyp.orig > deps/sqlite3.gyp; $(NAD) configure --nodedir ../../../../$(BUILD_DIR) && $(NAD) inject)

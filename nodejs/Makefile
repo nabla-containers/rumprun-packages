@@ -82,6 +82,10 @@ run_authservice:
 run_authservice_hw:
 	make -C examples run_authservice_hw
 
+.PHONY: run_fib_hw
+run_fib_hw:
+	make -C examples run_fib_hw
+
 .PHONY: run_gdb
 run_gdb: build-4.3.0/out/Release/node-authservice.ukvm
 	gdb --ex="b ukvm_elf_load" --ex="r --disk=dummy --net=tap100 build-4.3.0/out/Release/node-authservice.ukvm" --ex="finish" --ex="add-symbol-file build-4.3.0/out/Release/node-authservice.ukvm 0x100000" ./ukvm-bin.seccomp
