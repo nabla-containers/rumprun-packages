@@ -1,6 +1,6 @@
 {
 	"authservice_port": 9083,
-	"authContextRoot": "/auth",
+	"authContextRoot": "/",
 	
 	"loggerLevel" : "DEBUG",
 	"useDevLogger" : false     

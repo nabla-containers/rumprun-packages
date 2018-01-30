@@ -59,6 +59,7 @@ logger.info("port==" + port);
 logger.info("db type==" + dbtype);
 
 router.get('/', checkStatus);
+router.post('/data', getData);
 router.post('/login', routes.login);
 router.get('/service', serviceName);
 router.get('/config/runtime', routes.getRuntimeInfo);
@@ -76,7 +77,13 @@ function startServer() {
 }
 
 function checkStatus(req, res){
-	res.status(200).send('OK');
+        res.status(200).send('OK');
+}
+
+function getData(req, res) {
+	var len = parseInt(req.param('size', 1000), 10);
+	var str = new Array(len + 1).join('x');
+	res.status(200).send(str);
 }
 
 function serviceName(req, res){

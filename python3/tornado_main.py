@@ -3,7 +3,12 @@ import tornado.web
 
 class MainHandler(tornado.web.RequestHandler):
     def get(self):
-        self.write("Hello, world")
+        size = int(self.get_argument('size', 1000))
+        self.write('x'*size)
+
+    def post(self):
+        size = int(self.get_argument('size', 1000))
+        self.write('x'*size)
 
 def make_app():
     return tornado.web.Application([
