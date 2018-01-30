@@ -71,29 +71,77 @@ python.fs: examples/main.py
 	x86_64-rumprun-netbsd-cookfs python.fs python
 
 python_flask.fs: flask_main.py
-	rm -rf tutorial-env
-	pyvenv-3.5 tutorial-env
-	bash -c "source tutorial-env/bin/activate; pip install flask; deactivate"
+	rm -rf flask-env
+	pyvenv-3.5 flask-env
+	bash -c "source flask-env/bin/activate; pip install flask; deactivate"
 	rm -rf python
 	mkdir -p python/lib
 	cp -r build/pythondist/lib/python3.5 python/lib/.
-	cp -r tutorial-env/lib/python3.5/site-packages/* python/lib/python3.5/site-packages/.
+	cp -r flask-env/lib/python3.5/site-packages/* python/lib/python3.5/site-packages/.
 	cp flask_main.py python/lib/python3.5/site-packages/.
 	x86_64-rumprun-netbsd-cookfs python_flask.fs python
 
-tutorialenv.iso: flask_main.py
-	genisoimage -r -o tutorialenv.iso flask_main.py tutorial-env/lib/python3.5/site-packages
+python_aio.fs: aio_main.py
+	rm -rf aio-env
+	pyvenv-3.5 aio-env
+	bash -c "source aio-env/bin/activate; pip install aiohttp asyncio; deactivate"
+	rm -rf python
+	mkdir -p python/lib
+	cp -r build/pythondist/lib/python3.5 python/lib/.
+	cp -r aio-env/lib/python3.5/site-packages/* python/lib/python3.5/site-packages/.
+	cp aio_main.py python/lib/python3.5/site-packages/.
+	x86_64-rumprun-netbsd-cookfs python_aio.fs python
+
+flaskenv.iso: flask_main.py
+	rm -rf flask-env
+	pyvenv-3.5 flask-env
+	bash -c "source flask-env/bin/activate; pip install flask; deactivate"
+	genisoimage -r -o flaskenv.iso flask_main.py flask-env/lib/python3.5/site-packages
+
+aioenv.iso: aio_main.py
+	rm -rf aio-env
+	pyvenv-3.5 aio-env
+	bash -c "source aio-env/bin/activate; pip install aiohttp asyncio; deactivate"
+	genisoimage -r -o aioenv.iso aio_main.py aio-env/lib/python3.5/site-packages
+
+muffinenv.iso: muffin_main.py
+	rm -rf muffin-env
+	pyvenv-3.5 muffin-env
+	bash -c "source muffin-env/bin/activate; pip install muffin asyncio; deactivate"
+	genisoimage -r -o muffinenv.iso muffin_main.py muffin-env/lib/python3.5/site-packages
 
 .PHONY: run_hw_flask_iso
-run_hw_flask_iso: tutorialenv.iso
+run_hw_flask_iso: flaskenv.iso
 	rumprun-bake hw_generic examples/python.bin build/python 
 	rumprun qemu -i -g '-nographic -vga none' \
  	   -I if,vioif,'-net tap,ifname=tap100,script=no' \
            -W if,inet,static,10.0.0.2/24 \
 	   -b images/python.iso,/python/lib/python3.5 \
-	   -b tutorialenv.iso,/python/lib/python3.5/site-packages \
+	   -b flaskenv.iso,/python/lib/python3.5/site-packages \
 	   -e PYTHONHOME=/python \
 	   -- examples/python.bin -m flask_main
+
+.PHONY: run_hw_aio_iso
+run_hw_aio_iso: aioenv.iso
+	rumprun-bake hw_generic examples/python.bin build/python 
+	rumprun qemu -i -g '-nographic -vga none' \
+ 	   -I if,vioif,'-net tap,ifname=tap100,script=no' \
+           -W if,inet,static,10.0.0.2/24 \
+	   -b images/python.iso,/python/lib/python3.5 \
+	   -b aioenv.iso,/python/lib/python3.5/site-packages \
+	   -e PYTHONHOME=/python \
+	   -- examples/python.bin -m aio_main
+
+.PHONY: run_hw_muffin_iso
+run_hw_muffin_iso: muffinenv.iso
+	rumprun-bake hw_generic examples/python.bin build/python 
+	rumprun qemu -i -g '-nographic -vga none' \
+ 	   -I if,vioif,'-net tap,ifname=tap100,script=no' \
+           -W if,inet,static,10.0.0.2/24 \
+	   -b images/python.iso,/python/lib/python3.5 \
+	   -b muffinenv.iso,/python/lib/python3.5/site-packages \
+	   -e PYTHONHOME=/python \
+	   -- examples/python.bin -m muffin_main
 
 run_hw_flask: python_flask.fs
 	rumprun-bake -m "add python_flask.fs" hw_generic examples/python.bin build/python
@@ -102,6 +150,14 @@ run_hw_flask: python_flask.fs
            -W if,inet,static,10.0.0.2/24 \
 	   -e PYTHONHOME=/python \
 	   -- examples/python.bin -m flask_main
+
+run_hw_aio: python_aio.fs
+	rumprun-bake -m "add python_aio.fs" hw_generic examples/python.bin build/python
+	rumprun qemu -M 256 -i -g '-nographic -vga none' \
+ 	   -I if,vioif,'-net tap,ifname=tap100,script=no' \
+           -W if,inet,static,10.0.0.2/24 \
+	   -e PYTHONHOME=/python \
+	   -- examples/python.bin -m aio_main
 
 .PHONY: run_hw
 run_hw: python.fs
