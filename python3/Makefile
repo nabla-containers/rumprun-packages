@@ -53,6 +53,11 @@ build/configure: build/Programs/host_freeze_importlib
 build/stamp_patch: build/configure patches/*
 	cp config.site build/
 	(cd build && ../../scripts/apply-patches.sh ./ ../patches/*)
+	wget --no-clobber https://github.com/numpy/numpy/releases/download/v1.12.1/numpy-1.12.1.tar.gz
+	rm -rf numpy-1.12.1
+	rm -rf build/Modules/numpy
+	tar xzvf numpy-1.12.1.tar.gz
+	cp -R numpy-1.12.1/numpy/core build/Modules/numpy
 	cp -R files/* build/Modules/
 	touch $@
 
@@ -110,11 +115,11 @@ tornadoenv.iso: tornado_main.py
 	bash -c "source tornado-env/bin/activate; pip install tornado; deactivate"
 	genisoimage -r -o tornadoenv.iso tornado_main.py tornado-env/lib/python3.5/site-packages
 
-muffinenv.iso: muffin_main.py
-	rm -rf muffin-env
-	pyvenv-3.5 muffin-env
-	bash -c "source muffin-env/bin/activate; pip install muffin asyncio; deactivate"
-	genisoimage -r -o muffinenv.iso muffin_main.py muffin-env/lib/python3.5/site-packages
+numpyenv.iso: numpy_main.py
+	rm -rf numpy-env
+	pyvenv-3.5 numpy-env
+	bash -c "source numpy-env/bin/activate; pip install numpy; deactivate"
+	genisoimage -r -o numpyenv.iso numpy_main.py numpy-env/lib/python3.5/site-packages
 
 .PHONY: run_hw_flask_iso
 run_hw_flask_iso: flaskenv.iso
@@ -149,16 +154,16 @@ run_hw_tornado_iso: tornadoenv.iso
 	   -e PYTHONHOME=/python \
 	   -- examples/python.bin -m tornado_main
 
-.PHONY: run_hw_muffin_iso
-run_hw_muffin_iso: muffinenv.iso
+.PHONY: run_hw_numpy_iso
+run_hw_numpy_iso: numpyenv.iso
 	rumprun-bake hw_generic examples/python.bin build/python 
 	rumprun qemu -i -g '-nographic -vga none' \
  	   -I if,vioif,'-net tap,ifname=tap100,script=no' \
            -W if,inet,static,10.0.0.2/24 \
 	   -b images/python.iso,/python/lib/python3.5 \
-	   -b muffinenv.iso,/python/lib/python3.5/site-packages \
-	   -e PYTHONHOME=/python \
-	   -- examples/python.bin -m muffin_main
+	   -b numpyenv.iso,/python/lib/python3.5/site-packages \
+	   -e PYTHONHOME=/python -e PATH=/python \
+	   -- examples/python.bin -m numpy_main
 
 run_hw_flask: python_flask.fs
 	rumprun-bake -m "add python_flask.fs" hw_generic examples/python.bin build/python
