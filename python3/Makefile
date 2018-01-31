@@ -109,11 +109,11 @@ aioenv.iso: aio_main.py
 	bash -c "source aio-env/bin/activate; pip install aiohttp asyncio; deactivate"
 	genisoimage -r -o aioenv.iso aio_main.py aio-env/lib/python3.5/site-packages
 
-tornadoenv.iso: tornado_main.py bm_chameleon.py
+tornadoenv.iso: tornado_main.py bm_chameleon.py bm_tornado_http.py
 	rm -rf tornado-env
 	pyvenv-3.5 tornado-env
 	bash -c "source tornado-env/bin/activate; pip install tornado chameleon six perf; deactivate"
-	genisoimage -r -o tornadoenv.iso tornado_main.py bm_chameleon.py tornado-env/lib/python3.5/site-packages
+	genisoimage -r -o tornadoenv.iso tornado_main.py bm_chameleon.py bm_tornado_http.py tornado-env/lib/python3.5/site-packages
 
 numpyenv.iso: numpy_main.py
 	rm -rf numpy-env
@@ -164,6 +164,17 @@ run_hw_chameleon_iso: tornadoenv.iso
 	   -b tornadoenv.iso,/python/lib/python3.5/site-packages \
 	   -e PYTHONHOME=/python \
 	   -- examples/python.bin -m bm_chameleon
+
+.PHONY: run_hw_tornado_iso
+run_hw_bm_tornado_iso: tornadoenv.iso
+	rumprun-bake hw_generic examples/python.bin build/python 
+	rumprun qemu -i -g '-nographic -vga none' \
+ 	   -I if,vioif,'-net tap,ifname=tap100,script=no' \
+           -W if,inet,static,10.0.0.2/24 \
+	   -b images/python.iso,/python/lib/python3.5 \
+	   -b tornadoenv.iso,/python/lib/python3.5/site-packages \
+	   -e PYTHONHOME=/python \
+	   -- examples/python.bin -m bm_tornado_http
 
 .PHONY: run_hw_numpy_iso
 run_hw_numpy_iso: numpyenv.iso
