@@ -31,10 +31,12 @@ def main():
 
     func = functools.partial(tmpl, options=options)
 
+    tc0 = perf.perf_counter()
     t0 = time.time()
     for i in range(1, 200):
         func()
     print(time.time() - t0)
+    print(perf.perf_counter() - tc0)
 
 if __name__ == '__main__':
     main()
