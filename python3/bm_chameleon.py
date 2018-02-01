@@ -3,6 +3,7 @@ import functools
 import six
 import perf
 import time
+import datetime
 
 from chameleon import PageTemplate
 
@@ -31,12 +32,15 @@ def main():
 
     func = functools.partial(tmpl, options=options)
 
-    tc0 = perf.perf_counter()
-    t0 = time.time()
     for i in range(1, 200):
         func()
-    print(time.time() - t0)
-    print(perf.perf_counter() - tc0)
 
 if __name__ == '__main__':
+    ts0 = time.time()
+    print(datetime.datetime.fromtimestamp(ts0).strftime('%Y-%m-%d %H:%M:%S'))
+    tc0 = perf.perf_counter()
     main()
+    ts1 = time.time()
+    print(ts1 - ts0)
+    print(perf.perf_counter() - tc0)
+    print(datetime.datetime.fromtimestamp(ts1).strftime('%Y-%m-%d %H:%M:%S'))

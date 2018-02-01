@@ -56,6 +56,7 @@ def make_http_server(loop, request_handler):
 
 
 def bench_tornado(loops):
+    print('.')
     loop = IOLoop.instance()
     host, port = make_http_server(loop, make_application())
     url = "http://%s:%s/" % (host, port)
@@ -89,5 +90,6 @@ if __name__ == "__main__":
     runner = perf.Runner(**kw)
     runner.metadata['description'] = ("Test the performance of HTTP requests "
                                       "with Tornado.")
-    print(bench_tornado(10))
+    print('starting...')
+    print(bench_tornado(1))
     #runner.bench_sample_func('tornado_http', bench_tornado)

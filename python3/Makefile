@@ -86,15 +86,17 @@ python_flask.fs: flask_main.py
 	cp flask_main.py python/lib/python3.5/site-packages/.
 	x86_64-rumprun-netbsd-cookfs python_flask.fs python
 
-python_tornado.fs: tornado_main.py
+python_tornado.fs: tornado_main.py bm_chameleon.py bm_tornado_http.py
 	rm -rf tornado-env
 	pyvenv-3.5 tornado-env
-	bash -c "source tornado-env/bin/activate; pip install tornado; deactivate"
+	bash -c "source tornado-env/bin/activate; pip install tornado chameleon six perf; deactivate"
 	rm -rf python
 	mkdir -p python/lib
 	cp -r build/pythondist/lib/python3.5 python/lib/.
 	cp -r tornado-env/lib/python3.5/site-packages/* python/lib/python3.5/site-packages/.
 	cp tornado_main.py python/lib/python3.5/site-packages/.
+	cp bm_chameleon.py python/lib/python3.5/site-packages/.
+	cp bm_tornado_http.py python/lib/python3.5/site-packages/.
 	x86_64-rumprun-netbsd-cookfs python_tornado.fs python
 
 flaskenv.iso: flask_main.py
@@ -157,9 +159,7 @@ run_hw_tornado_iso: tornadoenv.iso
 .PHONY: run_hw_tornado_iso
 run_hw_chameleon_iso: tornadoenv.iso
 	rumprun-bake hw_generic examples/python.bin build/python 
-	rumprun qemu -i -g '-nographic -vga none' \
- 	   -I if,vioif,'-net tap,ifname=tap100,script=no' \
-           -W if,inet,static,10.0.0.2/24 \
+	rumprun qemu -i -g '-nographic -vga none' -g '-icount shift=6,rr=record,rrfile=replay.bin' \
 	   -b images/python.iso,/python/lib/python3.5 \
 	   -b tornadoenv.iso,/python/lib/python3.5/site-packages \
 	   -e PYTHONHOME=/python \
@@ -168,7 +168,7 @@ run_hw_chameleon_iso: tornadoenv.iso
 .PHONY: run_hw_tornado_iso
 run_hw_bm_tornado_iso: tornadoenv.iso
 	rumprun-bake hw_generic examples/python.bin build/python 
-	rumprun qemu -i -g '-nographic -vga none' \
+	rumprun qemu -i -g '-nographic -vga none' -g '-icount shift=7,rr=record,rrfile=replay.bin' \
  	   -I if,vioif,'-net tap,ifname=tap100,script=no' \
            -W if,inet,static,10.0.0.2/24 \
 	   -b images/python.iso,/python/lib/python3.5 \
@@ -202,6 +202,18 @@ run_hw_tornado: python_tornado.fs
            -W if,inet,static,10.0.0.2/24 \
 	   -e PYTHONHOME=/python \
 	   -- examples/python.bin -m tornado_main
+
+run_hw_bm_tornado: python_tornado.fs
+	rumprun-bake -m "add python_tornado.fs" hw_generic examples/python.bin build/python
+	rumprun qemu -M 256 -i -g '-nographic -vga none'  -g '-icount shift=8,rr=record,rrfile=replay.bin' \
+	   -e PYTHONHOME=/python \
+	   -- examples/python.bin -m bm_tornado_http
+
+run_hw_chameleon: python_tornado.fs
+	rumprun-bake -m "add python_tornado.fs" hw_generic examples/python.bin build/python
+	rumprun qemu -M 256 -i -g '-nographic -vga none' \
+	   -e PYTHONHOME=/python \
+	   -- examples/python.bin -m bm_chameleon
 
 .PHONY: run_hw
 run_hw: python.fs
