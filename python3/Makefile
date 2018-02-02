@@ -224,14 +224,26 @@ run_hw_chameleon: python_tornado.fs
 	   -e PYTHONHOME=/python \
 	   -- examples/python.bin -m bm_chameleon
 
+.PHONY: run_ukvm_chameleon
+run_ukvm_chameleon: python_tornado.fs
+	rumprun-bake -m "add python_tornado.fs" solo5_ukvm_net examples/python.ukvm build/python
+	touch dummy
+	../ukvm-bin --disk=dummy --net=tap100 examples/python.ukvm '{"cmdline":"examples/python.bin -m bm_chameleon","env":"PYTHONHOME=/python"}'
+
+.PHONY: run_ukvm_2to3
+run_ukvm_2to3: python_tornado.fs data_2to3.fs
+	rumprun-bake -m "add python_tornado.fs" -m "add data_2to3.fs" solo5_ukvm_net examples/python.ukvm build/python
+	touch dummy
+	../ukvm-bin --disk=dummy --net=tap100 examples/python.ukvm '{"cmdline":"examples/python.bin -m lib2to3 -f all /data_2to3/context_processors.py.txt /data_2to3/exceptions.py.txt /data_2to3/__init__.py.txt /data_2to3/mail.py.txt /data_2to3/paginator.py.txt /data_2to3/signals.py.txt /data_2to3/template_loader.py.txt /data_2to3/urlresolvers.py.txt /data_2to3/xheaders.py.txt","env":"PYTHONHOME=/python"}' 
+
 .PHONY: run_hw
 run_hw: python.fs
 	rumprun-bake -m "add python.fs" hw_generic examples/python.bin build/python 
 	rumprun qemu -M 256 -i -g '-nographic -vga none' -e PYTHONHOME=/python -- examples/python.bin -m main
 
 .PHONY: run_ukvm
-run_ukvm: python.fs
-	rumprun-bake -m "add python.fs" solo5_net examples/python.bin build/python 
+run_ukvm: python.fs build/python
+	rumprun-bake -m "add python.fs" solo5_ukvm_net examples/python.bin build/python 
 	touch dummy
 	../ukvm-bin --disk=dummy --net=tap100 examples/python.bin '{"cmdline":"examples/python.bin -m main","env":"PYTHONHOME=/python","net":{"if":"ukvmif0","cloner":"True","type":"inet","method":"static","addr":"10.0.0.2","mask":"16"}}' 
 
@@ -249,7 +261,11 @@ clean:
 	-$(MAKE) -C build clean
 	rm -f bin/*
 	rm -f images/python.iso
-	rm -f examples/hw.c examples/hw.bin examples/hw
+	rm -f examples/hw.c examples/*.bin examples/hw
+	rm -rf build
+	rm -rf *.ukvm
+	rm -rf *.bin
+	rm -f *.fs
 
 .PHONY: distclean
 distclean: clean
