@@ -49,6 +49,22 @@ app.use(bodyParser.text({ type: 'text/html' }));//parse an HTML body into a stri
 app.use(methodOverride());// simulate DELETE and PUT
 app.use(cookieParser());// parse cookie
 
+
+// XXX: this is needed when loaded as an in memory FS using cookfs. For some reason
+// we need to read all in sync or some parts of the files are not completely accessible
+// when reading by parts later. Don't know exactly what's the isseu on the FS or cookfs side.
+// but it's not advisable to build larger than 10k mem FSes.
+//
+// read content of /authservice/node_modules/iconv-lite/encodings
+const testFolder = '/authservice/node_modules/iconv-lite/encodings';
+fs.readdirSync(testFolder).forEach(file => {
+  console.log(file);
+  if (!fs.statSync('/authservice/node_modules/iconv-lite/encodings/'+file).isDirectory()) {
+      var contents = fs.readFileSync('/authservice/node_modules/iconv-lite/encodings/'+file, 'utf8');
+  }
+})
+
+
 var port = (process.env.PORT || process.env.VCAP_APP_PORT || settings.authservice_port);
 var dbtype = process.env.dbtype || "mongo";
 var routes = new require('./authservice/routes/index.js')(dbtype, settings); 
