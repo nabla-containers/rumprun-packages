@@ -23,10 +23,12 @@ node-authservice.bin: authservice/authservice_app.js authservice/authservice/rou
 authservice.iso: authservice/authservice_app.js authservice/authservice/routes/index.js
 	genisoimage -l -r -o authservice.iso authservice
 
-node-authservice.ukvm: authservice/authservice_app.js authservice/authservice/routes/index.js
+authservice.fs: authservice/authservice_app.js authservice/authservice/routes/index.js
 	(cd authservice; npm install)
 	x86_64-rumprun-netbsd-cookfs authservice.fs authservice
-	rumprun-bake -m "add authservice.fs" solo5_net node-authservice.ukvm ../build-4.3.0/out/Release/node-default
+
+node-authservice.ukvm: authservice.fs ../build-4.3.0/out/Release/node-default
+	rumprun-bake -m "add authservice.fs" solo5_ukvm_net node-authservice.ukvm ../build-4.3.0/out/Release/node-default
 
 .PHONY: run_authservice
 run_authservice: node-authservice.ukvm
