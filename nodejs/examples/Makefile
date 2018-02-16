@@ -30,10 +30,20 @@ authservice.fs: authservice/authservice_app.js authservice/authservice/routes/in
 node-authservice.ukvm: authservice.fs ../build-4.3.0/out/Release/node-default
 	rumprun-bake -m "add authservice.fs" solo5_ukvm_net node-authservice.ukvm ../build-4.3.0/out/Release/node-default
 
-.PHONY: run_authservice
-run_authservice: node-authservice.ukvm
+node-authservice.seccomp: authservice.fs ../build-4.3.0/out/Release/node-default
+	rumprun-bake -m "add authservice.fs" solo5_ukvm_seccomp node-authservice.seccomp ../build-4.3.0/out/Release/node-default
+
+.PHONY: run_authservice_ukvm
+run_authservice_ukvm: node-authservice.ukvm
 	touch dummy
-	../ukvm-bin.seccomp --disk=dummy --net=tap100 node-authservice.ukvm '{"cmdline":"node-authservice.ukvm /authservice/authservice_app.js","env":"CUSTOMER_SERVICE=10.0.0.4:5000","net":{"if":"ukvmif0","cloner":"True","type":"inet","method":"static","addr":"10.0.0.2","mask":"16"}}'
+	../../ukvm-bin.vm --disk=dummy --net=tap100 node-authservice.ukvm '{"cmdline":"node-authservice.ukvm /authservice/authservice_app.js","env":"CUSTOMER_SERVICE=10.0.0.4:5000","net":{"if":"ukvmif0","cloner":"True","type":"inet","method":"static","addr":"10.0.0.2","mask":"16"}}'
+
+.PHONY: run_authservice_seccomp
+run_authservice_seccomp: node-authservice.seccomp
+	touch dummy
+	../../ukvm-bin.seccomp --disk=dummy --net=tap100 node-authservice.seccomp '{"cmdline":"node-authservice.seccomp /authservice/authservice_app.js","env":"CUSTOMER_SERVICE=10.0.0.4:5000","net":{"if":"ukvmif0","cloner":"True","type":"inet","method":"static","addr":"10.0.0.2","mask":"16"}}'
+
+
 
 # 'rumprun qemu' doesn't work with node in memory file systems. Only 'rumprun kvm' does
 .PHONY: run_authservice_hw
