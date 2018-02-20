@@ -27,23 +27,40 @@ authservice.fs: authservice/authservice_app.js authservice/authservice/routes/in
 	(cd authservice; npm install)
 	x86_64-rumprun-netbsd-cookfs authservice.fs authservice
 
-node-authservice.ukvm: authservice.fs ../build-4.3.0/out/Release/node-default
-	rumprun-bake -m "add authservice.fs" solo5_ukvm_net node-authservice.ukvm ../build-4.3.0/out/Release/node-default
+authservice.ext2: authservice/authservice_app.js authservice/authservice/routes/index.js
+	(cd authservice; npm install)
+	dd if=/dev/zero of=authservice.ext2 count=40960 bs=1024
+	genext2fs -B 1024 -b 40960 -d authservice authservice.ext2
 
-node-authservice.seccomp: authservice.fs ../build-4.3.0/out/Release/node-default
-	rumprun-bake -m "add authservice.fs" solo5_ukvm_seccomp node-authservice.seccomp ../build-4.3.0/out/Release/node-default
+node-authservice_cooked.ukvm: authservice.fs ../build-4.3.0/out/Release/node-default
+	rumprun-bake -m "add authservice.fs" solo5_ukvm_net node-authservice_cooked.ukvm ../build-4.3.0/out/Release/node-default
+
+node-authservice.ukvm: ../build-4.3.0/out/Release/node-default
+	rumprun-bake solo5_ukvm_net node-authservice.ukvm ../build-4.3.0/out/Release/node-default
+
+node-authservice_cooked.seccomp: authservice.fs ../build-4.3.0/out/Release/node-default
+	rumprun-bake -m "add authservice.fs" solo5_ukvm_seccomp node-authservice_cooked.seccomp ../build-4.3.0/out/Release/node-default
+
+node-authservice.seccomp: ../build-4.3.0/out/Release/node-default authservice.ext2
+	rumprun-bake solo5_ukvm_seccomp node-authservice.seccomp ../build-4.3.0/out/Release/node-default
+
+.PHONY: run_authservice_cooked_ukvm
+run_authservice_cooked_ukvm: node-authservice_cooked.ukvm
+	touch dummy
+	../../ukvm-bin.vm --disk=dummy --net=tap100 node-authservice_cooked.ukvm '{"cmdline":"node-authservice.ukvm /authservice/authservice_app.js","env":"CUSTOMER_SERVICE=10.0.0.4:5000","net":{"if":"ukvmif0","cloner":"True","type":"inet","method":"static","addr":"10.0.0.2","mask":"16"}}'
+
+.PHONY: run_authservice_cooked_seccomp
+run_authservice_cooked_seccomp: node-authservice_cooked.seccomp
+	touch dummy
+	../../ukvm-bin.seccomp --disk=dummy --net=tap100 node-authservice_cooked.seccomp '{"cmdline":"node-authservice.seccomp /authservice/authservice_app.js","env":"CUSTOMER_SERVICE=10.0.0.4:5000","net":{"if":"ukvmif0","cloner":"True","type":"inet","method":"static","addr":"10.0.0.2","mask":"16"}}'
 
 .PHONY: run_authservice_ukvm
-run_authservice_ukvm: node-authservice.ukvm
-	touch dummy
-	../../ukvm-bin.vm --disk=dummy --net=tap100 node-authservice.ukvm '{"cmdline":"node-authservice.ukvm /authservice/authservice_app.js","env":"CUSTOMER_SERVICE=10.0.0.4:5000","net":{"if":"ukvmif0","cloner":"True","type":"inet","method":"static","addr":"10.0.0.2","mask":"16"}}'
+run_authservice_ukvm: node-authservice.ukvm authservice.ext2
+	../../ukvm-bin.vm --disk=authservice.ext2 --net=tap100 node-authservice.ukvm '{"cmdline":"node-authservice.ukvm /authservice/authservice_app.js","env":"CUSTOMER_SERVICE=10.0.0.4:5000","net":{"if":"ukvmif0","cloner":"True","type":"inet","method":"static","addr":"10.0.0.2","mask":"16"},"blk":{"source":"etfs","path":"/dev/ld0a","fstype":"blk","mountpoint":"/authservice"}}'
 
 .PHONY: run_authservice_seccomp
-run_authservice_seccomp: node-authservice.seccomp
-	touch dummy
-	../../ukvm-bin.seccomp --disk=dummy --net=tap100 node-authservice.seccomp '{"cmdline":"node-authservice.seccomp /authservice/authservice_app.js","env":"CUSTOMER_SERVICE=10.0.0.4:5000","net":{"if":"ukvmif0","cloner":"True","type":"inet","method":"static","addr":"10.0.0.2","mask":"16"}}'
-
-
+run_authservice_seccomp: node-authservice.seccomp authservice.ext2
+	../../ukvm-bin.seccomp --disk=authservice.ext2 --net=tap100 node-authservice.seccomp '{"cmdline":"node-authservice.seccomp /authservice/authservice_app.js","env":"CUSTOMER_SERVICE=10.0.0.4:5000","net":{"if":"ukvmif0","cloner":"True","type":"inet","method":"static","addr":"10.0.0.2","mask":"16"},"blk":{"source":"etfs","path":"/dev/ld0a","fstype":"blk","mountpoint":"/authservice"}}'
 
 # 'rumprun qemu' doesn't work with node in memory file systems. Only 'rumprun kvm' does
 .PHONY: run_authservice_hw
@@ -101,4 +118,4 @@ ghost_data.img: | Ghost-$(GHOST_VERSION)
 
 .PHONY: clean
 clean:
-	rm -rf *.iso node_modules ursa/node_modules express-* Ghost-* ghost-* ghost_data.img bootstrap.js socket.io-chess nodekick *.fs hello-world.js
+	rm -rf *.iso node_modules ursa/node_modules express-* Ghost-* ghost-* ghost_data.img bootstrap.js socket.io-chess nodekick *.fs hello-world.js node-authservice.seccomp node-authservice.ukvm authservice.fs authservice.ext2

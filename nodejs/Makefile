@@ -74,9 +74,13 @@ run_ukvm:
 	(cd examples; touch dummy; \
 	../ukvm-bin.seccomp --disk=dummy --net=tap100 ../build-4.3.0/out/Release/node-express-4.13.3.bin '{"cmdline":"../build-4.3.0/out/Release/node-express-4.13.3.bin /express-4.13.3/examples/authservice-node/authservice_app.js","env":"CUSTOMER_SERVICE=10.0.0.4:5000","net":{"if":"ukvmif0","cloner":"True","type":"inet","method":"static","addr":"10.0.0.2","mask":"16"}}')
 
-.PHONY: run_authservice
-run_authservice:
-	make -C examples run_authservice
+.PHONY: run_authservice_ukvm
+run_authservice_ukvm:
+	make -C examples run_authservice_ukvm
+
+.PHONY: run_authservice_seccomp
+run_authservice_seccomp:
+	make -C examples run_authservice_seccomp
 
 .PHONY: run_authservice_hw
 run_authservice_hw:
