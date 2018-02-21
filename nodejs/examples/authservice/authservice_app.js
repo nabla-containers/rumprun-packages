@@ -58,7 +58,7 @@ app.use(cookieParser());// parse cookie
 // read content of /authservice/node_modules/iconv-lite/encodings
 const testFolder = '/authservice/node_modules/iconv-lite/encodings';
 fs.readdirSync(testFolder).forEach(file => {
-  console.log(file);
+  //console.log(file);
   if (!fs.statSync('/authservice/node_modules/iconv-lite/encodings/'+file).isDirectory()) {
       var contents = fs.readFileSync('/authservice/node_modules/iconv-lite/encodings/'+file, 'utf8');
   }
