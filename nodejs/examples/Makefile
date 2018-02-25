@@ -41,7 +41,7 @@ node.ukvm: ../build-4.3.0/out/Release/node-default
 node-authservice_cooked.seccomp: authservice.fs ../build-4.3.0/out/Release/node-default
 	rumprun-bake -m "add authservice.fs" solo5_ukvm_seccomp node-authservice_cooked.seccomp ../build-4.3.0/out/Release/node-default
 
-node.seccomp: ../build-4.3.0/out/Release/node-default authservice.ext2
+node.seccomp: ../build-4.3.0/out/Release/node-default
 	rumprun-bake solo5_ukvm_seccomp node.seccomp ../build-4.3.0/out/Release/node-default
 
 .PHONY: run_authservice_cooked_ukvm
