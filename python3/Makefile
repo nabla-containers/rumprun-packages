@@ -75,6 +75,20 @@ python.fs: examples/main.py
 	cp examples/main.py python/lib/python3.5/site-packages/.
 	x86_64-rumprun-netbsd-cookfs python.fs python
 
+python_hello.fs: examples/hello.py
+	rm -rf python
+	mkdir -p python/lib/
+	cp -r build/pythondist/lib/python3.5 python/lib/.
+	cp examples/hello.py python/lib/python3.5/site-packages/.
+	x86_64-rumprun-netbsd-cookfs python_hello.fs python
+
+python_hello.iso: examples/hello.py
+	rm -rf python
+	mkdir -p python/lib/
+	cp -r build/pythondist/lib/python3.5 python/lib/.
+	cp examples/hello.py python/lib/python3.5/site-packages/.
+	$(RUMPRUN_GENISOIMAGE) -o python_hello.iso python
+
 python_flask.fs: flask_main.py
 	rm -rf flask-env
 	pyvenv-3.5 flask-env
@@ -241,11 +255,76 @@ run_hw: python.fs
 	rumprun-bake -m "add python.fs" hw_generic examples/python.bin build/python 
 	rumprun qemu -M 256 -i -g '-nographic -vga none' -e PYTHONHOME=/python -- examples/python.bin -m main
 
+examples/python.ukvm: build/python
+	rumprun-bake solo5_ukvm_net examples/python.ukvm build/python
+
+examples/python.seccomp: build/python
+	rumprun-bake solo5_ukvm_seccomp examples/python.seccomp build/python
+
 .PHONY: run_ukvm
-run_ukvm: python.fs build/python
-	rumprun-bake -m "add python.fs" solo5_ukvm_net examples/python.bin build/python 
+run_ukvm: python_hello.iso examples/python.ukvm
+	../ukvm-bin.vm --disk=python_hello.iso --net=tap100 examples/python.ukvm '{"cmdline":"examples/python.bin -m hello","env":"PYTHONHOME=/python","net":{"if":"ukvmif0","cloner":"True","type":"inet","method":"static","addr":"10.0.0.2","mask":"16"},"blk":{"source":"etfs","path":"/dev/ld0a","fstype":"blk","mountpoint":"/python"}}' 
+
+.PHONY: run_seccomp
+run_seccomp: python_hello.iso examples/python.seccomp
+	../ukvm-bin.seccomp --disk=python_hello.iso --net=tap100 examples/python.seccomp '{"cmdline":"examples/python.bin -m hello","env":"PYTHONHOME=/python","net":{"if":"ukvmif0","cloner":"True","type":"inet","method":"static","addr":"10.0.0.2","mask":"16"},"blk":{"source":"etfs","path":"/dev/ld0a","fstype":"blk","mountpoint":"/python"}}' 
+
+examples/python_hello.ukvm: python_hello.fs build/python
+	rumprun-bake -m "add python_hello.fs" solo5_ukvm_net examples/python_hello.ukvm build/python
+
+.PHONY: run_ukvm_cooked
+run_ukvm_cooked: examples/python_hello.ukvm
 	touch dummy
-	../ukvm-bin --disk=dummy --net=tap100 examples/python.bin '{"cmdline":"examples/python.bin -m main","env":"PYTHONHOME=/python","net":{"if":"ukvmif0","cloner":"True","type":"inet","method":"static","addr":"10.0.0.2","mask":"16"}}' 
+	../ukvm-bin.vm --disk=dummy --net=tap100 examples/python_hello.ukvm '{"cmdline":"examples/python.bin -m hello","env":"PYTHONHOME=/python","net":{"if":"ukvmif0","cloner":"True","type":"inet","method":"static","addr":"10.0.0.2","mask":"16"}}' 
+
+examples/python_hello.seccomp: python_hello.fs build/python
+	rumprun-bake -m "add python_hello.fs" solo5_ukvm_seccomp examples/python_hello.seccomp build/python
+
+.PHONY: run_seccomp_cooked
+run_seccomp_cooked: examples/python_hello.seccomp
+	touch dummy
+	../ukvm-bin.seccomp --disk=dummy --net=tap100 examples/python_hello.seccomp '{"cmdline":"examples/python.bin -m hello","env":"PYTHONHOME=/python","net":{"if":"ukvmif0","cloner":"True","type":"inet","method":"static","addr":"10.0.0.2","mask":"16"}}' 
+
+
+
+python/lib/python3.5/site-packages/flask_main.py: flask_main.py
+	rm -rf flask-env
+	pyvenv-3.5 flask-env
+	bash -c "source flask-env/bin/activate; pip install flask; deactivate"
+	rm -rf python
+	mkdir -p python/lib
+	cp -r build/pythondist/lib/python3.5 python/lib/.
+	cp -r flask-env/lib/python3.5/site-packages/* python/lib/python3.5/site-packages/.
+	cp flask_main.py python/lib/python3.5/site-packages/.
+
+python_flask.ext2: python/lib/python3.5/site-packages/flask_main.py
+	dd if=/dev/zero of=python_flask.ext2 count=256000 bs=1024
+	genext2fs -B 1024 -b 256000 -d python python_flask.ext2
+
+python_flask.iso: python/lib/python3.5/site-packages/flask_main.py
+	$(RUMPRUN_GENISOIMAGE) -o python_flask.iso python
+
+.PHONY: run_flask_ukvm
+run_flask_ukvm: python_flask.iso examples/python.ukvm
+	../ukvm-bin.vm --disk=python_flask.iso --net=tap100 examples/python.ukvm '{"cmdline":"examples/python.bin -m flask_main","env":"PYTHONHOME=/python","net":{"if":"ukvmif0","cloner":"True","type":"inet","method":"static","addr":"10.0.0.2","mask":"16"},"blk":{"source":"etfs","path":"/dev/ld0a","fstype":"blk","mountpoint":"/python"}}' 
+
+.PHONY: run_flask_ukvm_cooked
+run_flask_ukvm_cooked: python_flask.fs build/python
+	rumprun-bake -m "add python_flask.fs" solo5_ukvm_net examples/python_flask.ukvm build/python
+	touch dummy
+	../ukvm-bin.vm --disk=dummy --net=tap100 examples/python_flask.ukvm '{"cmdline":"examples/python.bin -m flask_main","env":"PYTHONHOME=/python","net":{"if":"ukvmif0","cloner":"True","type":"inet","method":"static","addr":"10.0.0.2","mask":"16"}}' 
+
+.PHONY: run_flask_seccomp
+run_flask_seccomp: python_flask.iso examples/python.seccomp
+	../ukvm-bin.seccomp --disk=python_flask.iso --net=tap100 examples/python.seccomp '{"cmdline":"examples/python.bin -m flask_main","env":"PYTHONHOME=/python","net":{"if":"ukvmif0","cloner":"True","type":"inet","method":"static","addr":"10.0.0.2","mask":"16"},"blk":{"source":"etfs","path":"/dev/ld0a","fstype":"blk","mountpoint":"/python"}}' 
+
+.PHONY: run_flask_seccomp_cooked
+run_flask_seccomp_cooked: python_flask.fs build/python
+	rumprun-bake -m "add python_flask.fs" solo5_ukvm_seccomp examples/python_flask.seccomp build/python
+	touch dummy
+	../ukvm-bin.seccomp --disk=dummy --net=tap100 examples/python_flask.seccomp '{"cmdline":"examples/python.bin -m flask_main","env":"PYTHONHOME=/python","net":{"if":"ukvmif0","cloner":"True","type":"inet","method":"static","addr":"10.0.0.2","mask":"16"}}' 
+
+
 
 .PHONY: run_hw_fs
 run_hw_fs:
