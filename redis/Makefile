@@ -41,7 +41,14 @@ run_ukvm: bin/redis-server
 	x86_64-rumprun-netbsd-cookfs data.fs data
 	rumprun-bake -m "add data.fs" solo5_ukvm_net bin/redis-server.ukvm bin/redis-server
 	touch dummy
-	../ukvm-bin --disk=dummy --net=tap100 bin/redis-server.ukvm '{"cmdline":"build/redis-server.ukvm /data/conf/redis.conf","net":{"if":"ukvmif0","cloner":"True","type":"inet","method":"static","addr":"10.0.0.2","mask":"16"}}' 
+	../ukvm-bin.vm --disk=dummy --net=tap100 bin/redis-server.ukvm '{"cmdline":"build/redis-server.ukvm /data/conf/redis.conf","net":{"if":"ukvmif0","cloner":"True","type":"inet","method":"static","addr":"10.0.0.2","mask":"16"}}' 
+
+run_seccomp: bin/redis-server
+	x86_64-rumprun-netbsd-cookfs data.fs data
+	rumprun-bake -m "add data.fs" solo5_ukvm_seccomp bin/redis-server.ukvm bin/redis-server
+	touch dummy
+	../ukvm-bin.seccomp --disk=dummy --net=tap100 bin/redis-server.ukvm '{"cmdline":"build/redis-server.ukvm /data/conf/redis.conf","net":{"if":"ukvmif0","cloner":"True","type":"inet","method":"static","addr":"10.0.0.2","mask":"16"}}' 
+
 
 .PHONY: clean
 clean:	clean/build clean/bin
