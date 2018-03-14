@@ -55,12 +55,12 @@ run_authservice_cooked_seccomp: node-authservice_cooked.seccomp
 	../../ukvm-bin.seccomp --disk=dummy --net=tap100 node-authservice_cooked.seccomp '{"cmdline":"node.seccomp /authservice/authservice_app.js","env":"CUSTOMER_SERVICE=10.0.0.4:5000","net":{"if":"ukvmif0","cloner":"True","type":"inet","method":"static","addr":"10.0.0.2","mask":"16"}}'
 
 .PHONY: run_authservice_ukvm
-run_authservice_ukvm: node.ukvm authservice.ext2
-	../../ukvm-bin.vm --disk=authservice.ext2 --net=tap100 node.ukvm '{"cmdline":"node.ukvm /authservice/authservice_app.js","env":"CUSTOMER_SERVICE=10.0.0.4:5000","net":{"if":"ukvmif0","cloner":"True","type":"inet","method":"static","addr":"10.0.0.2","mask":"16"},"blk":{"source":"etfs","path":"/dev/ld0a","fstype":"blk","mountpoint":"/authservice"}}'
+run_authservice_ukvm: node.ukvm authservice.iso
+	../../ukvm-bin.vm --disk=authservice.iso --net=tap100 node.ukvm '{"cmdline":"node.ukvm /authservice/authservice_app.js","env":"CUSTOMER_SERVICE=10.0.0.4:5000","net":{"if":"ukvmif0","cloner":"True","type":"inet","method":"static","addr":"10.0.0.2","mask":"16"},"blk":{"source":"etfs","path":"/dev/ld0a","fstype":"blk","mountpoint":"/authservice"}}'
 
 .PHONY: run_authservice_seccomp
-run_authservice_seccomp: node.seccomp authservice.ext2
-	../../ukvm-bin.seccomp --disk=authservice.ext2 --net=tap100 node.seccomp '{"cmdline":"node.seccomp /authservice/authservice_app.js","env":"CUSTOMER_SERVICE=10.0.0.4:5000","net":{"if":"ukvmif0","cloner":"True","type":"inet","method":"static","addr":"10.0.0.2","mask":"16"},"blk":{"source":"etfs","path":"/dev/ld0a","fstype":"blk","mountpoint":"/authservice"}}'
+run_authservice_seccomp: node.seccomp authservice.iso
+	../../ukvm-bin.seccomp --disk=authservice.iso --net=tap100 node.seccomp '{"cmdline":"node.seccomp /authservice/authservice_app.js","env":"CUSTOMER_SERVICE=10.0.0.4:5000","net":{"if":"ukvmif0","cloner":"True","type":"inet","method":"static","addr":"10.0.0.2","mask":"16"},"blk":{"source":"etfs","path":"/dev/ld0a","fstype":"blk","mountpoint":"/authservice"}}'
 
 # 'rumprun qemu' doesn't work with node in memory file systems. Only 'rumprun kvm' does
 .PHONY: run_authservice_hw
