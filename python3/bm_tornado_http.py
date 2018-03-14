@@ -10,6 +10,8 @@ import socket
 
 from six.moves import xrange
 import perf
+import time
+import argparse
 
 from tornado.httpclient import AsyncHTTPClient
 from tornado.httpserver import HTTPServer
@@ -25,7 +27,12 @@ FAMILY = socket.AF_INET
 CHUNK = b"Hello world\n" * 1000
 NCHUNKS = 5
 
-CONCURRENCY = 150
+# Numbers used for rr used:
+# CONCURRENCY=150
+# loops=1
+# sleep=0
+
+CONCURRENCY = 1
 
 
 class MainHandler(RequestHandler):
@@ -55,7 +62,7 @@ def make_http_server(loop, request_handler):
     return sockets[0].getsockname()
 
 
-def bench_tornado(loops):
+def bench_tornado(loops, sleep=1):
     print('.')
     loop = IOLoop.instance()
     host, port = make_http_server(loop, make_application())
@@ -65,8 +72,13 @@ def bench_tornado(loops):
     @coroutine
     def run_client():
         client = AsyncHTTPClient()
-        range_it = xrange(loops)
         t0 = perf.perf_counter()
+
+        if loops == -1:
+            # -1 is forever
+            range_it = iter(int, 1)
+        else:
+            range_it = xrange(loops)
 
         for _ in range_it:
             futures = [client.fetch(url) for j in xrange(CONCURRENCY)]
@@ -75,6 +87,7 @@ def bench_tornado(loops):
                 buf = resp.buffer
                 buf.seek(0, 2)
                 assert buf.tell() == len(CHUNK) * NCHUNKS
+                time.sleep(sleep)
 
         namespace['dt'] = perf.perf_counter() - t0
 
@@ -83,6 +96,19 @@ def bench_tornado(loops):
 
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--sleep",
+        nargs='?',
+        default="1",
+        help="Seconds to sleep between client GET.")
+    parser.add_argument(
+        "--loops",
+        nargs='?',
+        default="-1",
+        help="Number of loops (each with CONCURRENCY number of GETs). Defaults to -1 (forever).")
+    args = parser.parse_args()
+
     kw = {}
     if perf.python_has_jit():
         # PyPy needs more samples to warmup its JIT
@@ -91,5 +117,6 @@ if __name__ == "__main__":
     runner.metadata['description'] = ("Test the performance of HTTP requests "
                                       "with Tornado.")
     print('starting...')
-    print(bench_tornado(1))
+    print('%s %s' % (args.loops, args.sleep))
+    print(bench_tornado(float(args.loops), float(args.sleep)))
     #runner.bench_sample_func('tornado_http', bench_tornado)

@@ -297,12 +297,25 @@ python/lib/python3.5/site-packages/flask_main.py: flask_main.py
 	cp -r flask-env/lib/python3.5/site-packages/* python/lib/python3.5/site-packages/.
 	cp flask_main.py python/lib/python3.5/site-packages/.
 
+python/lib/python3.5/site-packages/bm_tornado_http.py: bm_tornado_http.py
+	rm -rf flask-env
+	pyvenv-3.5 flask-env
+	bash -c "source flask-env/bin/activate; pip install tornado==4.5.3 six perf; deactivate"
+	rm -rf python
+	mkdir -p python/lib
+	cp -r build/pythondist/lib/python3.5 python/lib/.
+	cp -r flask-env/lib/python3.5/site-packages/* python/lib/python3.5/site-packages/.
+	cp bm_tornado_http.py python/lib/python3.5/site-packages/.
+
 python_flask.ext2: python/lib/python3.5/site-packages/flask_main.py
 	dd if=/dev/zero of=python_flask.ext2 count=256000 bs=1024
 	genext2fs -B 1024 -b 256000 -d python python_flask.ext2
 
 python_flask.iso: python/lib/python3.5/site-packages/flask_main.py
 	$(RUMPRUN_GENISOIMAGE) -o python_flask.iso python
+
+python_bm_tornado.iso: python/lib/python3.5/site-packages/bm_tornado_http.py
+	$(RUMPRUN_GENISOIMAGE) -o python_bm_tornado.iso python
 
 .PHONY: run_flask_ukvm
 run_flask_ukvm: python_flask.iso examples/python.ukvm
@@ -324,7 +337,9 @@ run_flask_seccomp_cooked: python_flask.fs build/python
 	touch dummy
 	../ukvm-bin.seccomp --disk=dummy --net=tap100 examples/python_flask.seccomp '{"cmdline":"examples/python.bin -m flask_main","env":"PYTHONHOME=/python","net":{"if":"ukvmif0","cloner":"True","type":"inet","method":"static","addr":"10.0.0.2","mask":"16"}}' 
 
-
+.PHONY: run_bm_tornado_ukvm
+run_bm_tornado_ukvm: python_bm_tornado.iso examples/python.ukvm
+	../ukvm-bin.vm --disk=python_bm_tornado.iso --net=tap100 examples/python.ukvm '{"cmdline":"examples/python.bin -m flask_main","env":"PYTHONHOME=/python","net":{"if":"ukvmif0","cloner":"True","type":"inet","method":"static","addr":"10.0.0.2","mask":"16"},"blk":{"source":"etfs","path":"/dev/ld0a","fstype":"blk","mountpoint":"/python"}}' 
 
 .PHONY: run_hw_fs
 run_hw_fs:
