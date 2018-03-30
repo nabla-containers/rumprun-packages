@@ -100,16 +100,14 @@ python_flask.fs: flask_main.py
 	cp flask_main.py python/lib/python3.5/site-packages/.
 	x86_64-rumprun-netbsd-cookfs python_flask.fs python
 
-python_tornado.fs: tornado_main.py bm_chameleon.py bm_tornado_http.py
+python_tornado.fs: bm_tornado_http.py
 	rm -rf tornado-env
 	pyvenv-3.5 tornado-env
-	bash -c "source tornado-env/bin/activate; pip install tornado chameleon six perf; deactivate"
+	bash -c "source tornado-env/bin/activate; pip install tornado==4.5.3 six perf; deactivate"
 	rm -rf python
 	mkdir -p python/lib
 	cp -r build/pythondist/lib/python3.5 python/lib/.
 	cp -r tornado-env/lib/python3.5/site-packages/* python/lib/python3.5/site-packages/.
-	cp tornado_main.py python/lib/python3.5/site-packages/.
-	cp bm_chameleon.py python/lib/python3.5/site-packages/.
 	cp bm_tornado_http.py python/lib/python3.5/site-packages/.
 	x86_64-rumprun-netbsd-cookfs python_tornado.fs python
 
@@ -317,6 +315,10 @@ python_flask.iso: python/lib/python3.5/site-packages/flask_main.py
 python_bm_tornado.iso: python/lib/python3.5/site-packages/bm_tornado_http.py
 	$(RUMPRUN_GENISOIMAGE) -o python_bm_tornado.iso python
 
+python_bm_tornado.ext2: python/lib/python3.5/site-packages/bm_tornado_http.py
+	dd if=/dev/zero of=python_bm_tornado.ext2 count=256000 bs=1024
+	genext2fs -B 1024 -b 256000 -d python python_bm_tornado.ext2
+
 .PHONY: run_flask_ukvm
 run_flask_ukvm: python_flask.iso examples/python.ukvm
 	../ukvm-bin.vm --disk=python_flask.iso --net=tap100 examples/python.ukvm '{"cmdline":"examples/python.bin -m flask_main","env":"PYTHONHOME=/python","net":{"if":"ukvmif0","cloner":"True","type":"inet","method":"static","addr":"10.0.0.2","mask":"16"},"blk":{"source":"etfs","path":"/dev/ld0a","fstype":"blk","mountpoint":"/python"}}' 
@@ -339,7 +341,17 @@ run_flask_seccomp_cooked: python_flask.fs build/python
 
 .PHONY: run_bm_tornado_ukvm
 run_bm_tornado_ukvm: python_bm_tornado.iso examples/python.ukvm
-	../ukvm-bin.vm --disk=python_bm_tornado.iso --net=tap100 examples/python.ukvm '{"cmdline":"examples/python.bin -m flask_main","env":"PYTHONHOME=/python","net":{"if":"ukvmif0","cloner":"True","type":"inet","method":"static","addr":"10.0.0.2","mask":"16"},"blk":{"source":"etfs","path":"/dev/ld0a","fstype":"blk","mountpoint":"/python"}}' 
+	../ukvm-bin.vm --disk=python_bm_tornado.iso --net=tap100 examples/python.ukvm '{"cmdline":"examples/python.bin -m bm_tornado_http","env":"PYTHONHOME=/python","net":{"if":"ukvmif0","cloner":"True","type":"inet","method":"static","addr":"10.0.0.2","mask":"16"},"blk":{"source":"etfs","path":"/dev/ld0a","fstype":"blk","mountpoint":"/python"}}' 
+
+.PHONY: run_bm_tornado_seccomp
+run_bm_tornado_seccomp: python_bm_tornado.iso examples/python.seccomp
+	../ukvm-bin.seccomp --disk=python_bm_tornado.iso --net=tap100 examples/python.seccomp '{"cmdline":"examples/python.bin -m bm_tornado_http","env":"PYTHONHOME=/python","net":{"if":"ukvmif0","cloner":"True","type":"inet","method":"static","addr":"10.0.0.2","mask":"16"},"blk":{"source":"etfs","path":"/dev/ld0a","fstype":"blk","mountpoint":"/python"}}' 
+
+.PHONY: run_bm_tornado_seccomp_cooked
+run_bm_tornado_seccomp_cooked: python_tornado.fs examples/python.seccomp
+	rumprun-bake -m "add python_tornado.fs" solo5_ukvm_seccomp examples/python_tornado.seccomp build/python
+	touch dummy
+	../ukvm-bin.seccomp --disk=dummy --net=tap100 examples/python_tornado.seccomp '{"cmdline":"examples/python.bin -m bm_tornado_http","env":"PYTHONHOME=/python","net":{"if":"ukvmif0","cloner":"True","type":"inet","method":"static","addr":"10.0.0.2","mask":"16"}}' 
 
 .PHONY: run_hw_fs
 run_hw_fs:
