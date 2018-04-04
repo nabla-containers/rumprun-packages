@@ -86,6 +86,9 @@ run_authservice_seccomp:
 run_authservice_hw:
 	make -C examples run_authservice_hw
 
+node.seccomp:
+	make -C examples node.seccomp
+
 .PHONY: run_fib_hw
 run_fib_hw:
 	make -C examples run_fib_hw
