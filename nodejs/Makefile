@@ -86,8 +86,8 @@ run_authservice_seccomp:
 run_authservice_hw:
 	make -C examples run_authservice_hw
 
-node.seccomp:
-	make -C examples node.seccomp
+node.seccomp: build-4.3.0/out/Release/node-default
+	rumprun-bake solo5_ukvm_seccomp node.seccomp build-4.3.0/out/Release/node-default
 
 .PHONY: run_fib_hw
 run_fib_hw:
