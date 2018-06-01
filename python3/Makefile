@@ -304,6 +304,7 @@ python/lib/python3.5/site-packages/bm_tornado_http.py: bm_tornado_http.py
 	cp -r build/pythondist/lib/python3.5 python/lib/.
 	cp -r flask-env/lib/python3.5/site-packages/* python/lib/python3.5/site-packages/.
 	cp bm_tornado_http.py python/lib/python3.5/site-packages/.
+	cp tornado_main.py python/lib/python3.5/site-packages/.
 
 python_flask.ext2: python/lib/python3.5/site-packages/flask_main.py
 	dd if=/dev/zero of=python_flask.ext2 count=256000 bs=1024
@@ -346,6 +347,10 @@ run_bm_tornado_ukvm: python_bm_tornado.iso python.ukvm
 .PHONY: run_bm_tornado_seccomp
 run_bm_tornado_seccomp: python_bm_tornado.iso python.seccomp
 	../ukvm-bin.seccomp --disk=python_bm_tornado.iso --net=tap100 python.seccomp '{"cmdline":"examples/python.bin -m bm_tornado_http","env":"PYTHONHOME=/python","net":{"if":"ukvmif0","cloner":"True","type":"inet","method":"static","addr":"10.0.0.2","mask":"16"},"blk":{"source":"etfs","path":"/dev/ld0a","fstype":"blk","mountpoint":"/python"}}' 
+
+.PHONY: run_bm_tornado_server_seccomp
+run_bm_tornado_server_seccomp: python_bm_tornado.iso python.seccomp
+	../ukvm-bin.seccomp --disk=python_bm_tornado.iso --net=tap100 python.seccomp '{"cmdline":"examples/python.bin -m tornado_main","env":"PYTHONHOME=/python","net":{"if":"ukvmif0","cloner":"True","type":"inet","method":"static","addr":"10.0.0.2","mask":"16"},"blk":{"source":"etfs","path":"/dev/ld0a","fstype":"blk","mountpoint":"/python"}}' 
 
 .PHONY: run_bm_tornado_seccomp_cooked
 run_bm_tornado_seccomp_cooked: python_tornado.fs python.seccomp
