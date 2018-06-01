@@ -41,9 +41,6 @@ node.ukvm: ../build-4.3.0/out/Release/node-default
 node-authservice_cooked.seccomp: authservice.fs ../build-4.3.0/out/Release/node-default
 	rumprun-bake -m "add authservice.fs" solo5_ukvm_seccomp node-authservice_cooked.seccomp ../build-4.3.0/out/Release/node-default
 
-node.seccomp: ../build-4.3.0/out/Release/node-default
-	rumprun-bake solo5_ukvm_seccomp node.seccomp ../build-4.3.0/out/Release/node-default
-
 .PHONY: run_authservice_cooked_ukvm
 run_authservice_cooked_ukvm: node-authservice_cooked.ukvm
 	touch dummy
@@ -59,8 +56,8 @@ run_authservice_ukvm: node.ukvm authservice.iso
 	../../ukvm-bin.vm --disk=authservice.iso --net=tap100 node.ukvm '{"cmdline":"node.ukvm /authservice/authservice_app.js","env":"CUSTOMER_SERVICE=10.0.0.4:5000","net":{"if":"ukvmif0","cloner":"True","type":"inet","method":"static","addr":"10.0.0.2","mask":"16"},"blk":{"source":"etfs","path":"/dev/ld0a","fstype":"blk","mountpoint":"/authservice"}}'
 
 .PHONY: run_authservice_seccomp
-run_authservice_seccomp: node.seccomp authservice.iso
-	../../ukvm-bin.seccomp --disk=authservice.iso --net=tap100 node.seccomp --solo5:quiet '{"cmdline":"node.seccomp /authservice/authservice_app.js","env":"CUSTOMER_SERVICE=10.0.0.4:5000","net":{"if":"ukvmif0","cloner":"True","type":"inet","method":"static","addr":"10.0.0.2","mask":"16"},"blk":{"source":"etfs","path":"/dev/ld0a","fstype":"blk","mountpoint":"/authservice"}}'
+run_authservice_seccomp: ../node.seccomp authservice.iso
+	../../ukvm-bin.seccomp --disk=authservice.iso --net=tap100 ../node.seccomp --solo5:quiet '{"cmdline":"node.seccomp /authservice/authservice_app.js","env":"CUSTOMER_SERVICE=10.0.0.4:5000","net":{"if":"ukvmif0","cloner":"True","type":"inet","method":"static","addr":"10.0.0.2","mask":"16"},"blk":{"source":"etfs","path":"/dev/ld0a","fstype":"blk","mountpoint":"/authservice"}}'
 
 # 'rumprun qemu' doesn't work with node in memory file systems. Only 'rumprun kvm' does
 .PHONY: run_authservice_hw
@@ -118,4 +115,4 @@ ghost_data.img: | Ghost-$(GHOST_VERSION)
 
 .PHONY: clean
 clean:
-	rm -rf *.iso node_modules ursa/node_modules express-* Ghost-* ghost-* ghost_data.img bootstrap.js socket.io-chess nodekick *.fs hello-world.js node.seccomp node.ukvm authservice.fs authservice.ext2
+	rm -rf *.iso node_modules ursa/node_modules express-* Ghost-* ghost-* ghost_data.img bootstrap.js socket.io-chess nodekick *.fs hello-world.js node.ukvm authservice.fs authservice.ext2
