@@ -93,11 +93,51 @@ run_ukvm: bin/nginx
 	touch dummy
 	../ukvm-bin.vm --disk=dummy --net=tap100 bin/nginx.ukvm '{"cmdline":"bin/nginx.ukvm -c /data/conf/nginx.conf","net":{"if":"ukvmif0","cloner":"True","type":"inet","method":"static","addr":"10.0.0.2","mask":"16"}}'
 
-.PHONY: run_seccomp
-run_seccomp: bin/nginx
+bin/nginx.seccomp:
 	x86_64-rumprun-netbsd-cookfs data.fs data
 	rumprun-bake -m "add data.fs" solo5_ukvm_seccomp bin/nginx.seccomp bin/nginx
+
+run_seccomp: bin/nginx.seccomp
 	touch dummy
 	../ukvm-bin.seccomp --disk=dummy --net=tap100 bin/nginx.seccomp '{"cmdline":"bin/nginx.seccomp -c /data/conf/nginx.conf","net":{"if":"ukvmif0","cloner":"True","type":"inet","method":"static","addr":"10.0.0.2","mask":"16"}}'
+
+run_seccomp_gdb: bin/nginx.seccomp
+	touch dummy
+	cgdb --ex="b ukvm_elf_load" --ex="r --disk=dummy --net=tap100 bin/nginx.seccomp '{\"cmdline\":\"bin/nginx.seccomp -c /data/conf/nginx.conf\",\"net\":{\"if\":\"ukvmif0\",\"cloner\":\"True\",\"type\":\"inet\",\"method\":\"static\",\"addr\":\"10.0.0.2\",\"mask\":\"16\"}}'" --ex="finish" --ex="add-symbol-file bin/nginx.seccomp 0x100000" ../ukvm-bin.seccomp
+
+run_seccomp_gdb2: bin/nginx.seccomp
+	touch dummy
+	cgdb --ex="b ukvm_elf_load" --ex="r --disk=dummy --net=tap100 bin/nginx.seccomp '{\"cmdline\":\"bin/nginx.seccomp -c /data/conf/nginx.conf\",\"net\":{\"if\":\"ukvmif0\",\"cloner\":\"True\",\"type\":\"inet\",\"method\":\"static\",\"addr\":\"10.0.0.2\",\"mask\":\"16\"}}'" --ex="finish" --ex="add-symbol-file bin/nginx.seccomp 0x100000" \
+	--ex="b rumpuser_clock_sleep" \
+	--ex="b rumpcomp_ukvmif_receive" \
+	--ex="b solo5_yield" \
+	--ex="b schedule" \
+	--ex="b rump_schedlock_cv_wait" \
+	--ex="b sched_switch" \
+	--ex="ignore 2 10000000" \
+	--ex="ignore 3 10000000" \
+	--ex="ignore 4 10000000" \
+	--ex="ignore 5 10000000" \
+	--ex="ignore 6 10000000" \
+	--ex="ignore 7 10000000" \
+	../ukvm-bin.seccomp
+
+run_seccomp_perf: bin/nginx.seccomp
+	touch dummy
+	perf record -g -F 999 -d -- ../ukvm-bin.seccomp --disk=dummy --net=tap100 bin/nginx.seccomp '{"cmdline":"bin/nginx.seccomp -c /data/conf/nginx.conf","net":{"if":"ukvmif0","cloner":"True","type":"inet","method":"static","addr":"10.0.0.2","mask":"16"}}'
+
+nginx.seccomp.map: bin/nginx.seccomp
+	#nm bin/nginx.seccomp > nginx.seccomp.map
+	bash -c "objdump -x bin/nginx.seccomp | awk '{ print \$$1, g, \$$NF }' > nginx.seccomp.map"
+	bash -c "objdump -x ../ukvm-bin.seccomp | awk '{ print \$$1, g, \$$NF }' >> nginx.seccomp.map"
+	#bash -c "objdump -x bin/nginx.seccomp | awk '{ print \$$1, \$$2, \$$NF }' > nginx.seccomp.map"
+
+.PHONY: flamegraph_seccomp
+flamegraph_seccomp: nginx.seccomp.map
+	cp nginx.seccomp.map /tmp/perf-19924.map
+	perf script  | ~/research/FlameGraph/stackcollapse-perf.pl --all --addrs | ~/research/FlameGraph/flamegraph.pl --color=java > out.svg
+
+flamegraph_gdb:
+	cat trace | ~/research/FlameGraph/stackcollapse-gdb.pl | ~/research/FlameGraph/flamegraph.pl --color=java > out.svg
 
 include ../Makefile.deps
