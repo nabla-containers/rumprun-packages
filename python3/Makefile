@@ -10,7 +10,7 @@ all: libssl $(RUMPRUN_PKGS_DIR)/lib/libsqlite.a images/python.iso
 $(RUMPRUN_PKGS_DIR)/lib/libsqlite.a:
 	$(MAKE) -C ../sqlite
 
-build/python: build/Makefile
+build/python: build/Makefile libssl $(RUMPRUN_PKGS_DIR)/lib/libsqlite.a
 	$(MAKE) -C build
 	$(MAKE) -C build install
 
