@@ -94,12 +94,10 @@ run_ukvm: bin/nginx
 	../ukvm-bin.vm --disk=dummy --net=tap100 bin/nginx.ukvm '{"cmdline":"bin/nginx.ukvm -c /data/conf/nginx.conf","net":{"if":"ukvmif0","cloner":"True","type":"inet","method":"static","addr":"10.0.0.2","mask":"16"}}'
 
 bin/nginx.seccomp:
-	x86_64-rumprun-netbsd-cookfs data.fs data
-	rumprun-bake -m "add data.fs" solo5_ukvm_seccomp bin/nginx.seccomp bin/nginx
+	rumprun-bake solo5_ukvm_seccomp bin/nginx.seccomp bin/nginx
 
-run_seccomp: bin/nginx.seccomp
-	touch dummy
-	../ukvm-bin.seccomp --disk=dummy --net=tap100 bin/nginx.seccomp '{"cmdline":"bin/nginx.seccomp -c /data/conf/nginx.conf","net":{"if":"ukvmif0","cloner":"True","type":"inet","method":"static","addr":"10.0.0.2","mask":"16"}}'
+run_seccomp: bin/nginx.seccomp images/data.iso
+	../ukvm-bin.seccomp --disk=images/data.iso --net=tap100 bin/nginx.seccomp '{"cmdline":"bin/nginx.seccomp -c /data/conf/nginx.conf","net":{"if":"ukvmif0","cloner":"True","type":"inet","method":"static","addr":"10.0.0.2","mask":"16"},"blk":{"source":"etfs","path":"/dev/ld0a","fstype":"blk","mountpoint":"/data"}}'
 
 run_seccomp_gdb: bin/nginx.seccomp
 	touch dummy
