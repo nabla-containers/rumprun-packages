@@ -96,6 +96,9 @@ run_ukvm: bin/nginx
 bin/nginx.seccomp:
 	rumprun-bake solo5_ukvm_seccomp bin/nginx.seccomp bin/nginx
 
+bin/nginx.ukvm:
+	rumprun-bake solo5_ukvm_net bin/nginx.ukvm bin/nginx
+
 run_seccomp: bin/nginx.seccomp images/data.iso
 	../ukvm-bin.seccomp --disk=images/data.iso --net=tap100 bin/nginx.seccomp '{"cmdline":"bin/nginx.seccomp -c /data/conf/nginx.conf","net":{"if":"ukvmif0","cloner":"True","type":"inet","method":"static","addr":"10.0.0.2","mask":"16"},"blk":{"source":"etfs","path":"/dev/ld0a","fstype":"blk","mountpoint":"/data"}}'
 
