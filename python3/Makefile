@@ -265,7 +265,7 @@ run_ukvm: python_hello.iso python.ukvm
 
 .PHONY: run_seccomp
 run_seccomp: python_hello.iso python.seccomp
-	../ukvm-bin.seccomp --disk=python_hello.iso --net=tap100 python.seccomp '{"cmdline":"examples/python.bin -m hello","env":"PYTHONHOME=/python","net":{"if":"ukvmif0","cloner":"True","type":"inet","method":"static","addr":"10.0.0.2","mask":"16"},"blk":{"source":"etfs","path":"/dev/ld0a","fstype":"blk","mountpoint":"/python"}}' 
+	../ukvm-bin.seccomp --disk=python_hello.iso --net=tap100 python.seccomp '{"cmdline":"python.seccomp -m hello","env":"PYTHONHOME=/python","net":{"if":"ukvmif0","cloner":"True","type":"inet","method":"static","addr":"10.0.0.2","mask":"16"},"blk":{"source":"etfs","path":"/dev/ld0a","fstype":"blk","mountpoint":"/python"}}' 
 
 examples/python_hello.ukvm: python_hello.fs build/python
 	rumprun-bake -m "add python_hello.fs" solo5_ukvm_net examples/python_hello.ukvm build/python
@@ -281,7 +281,7 @@ examples/python_hello.seccomp: python_hello.fs build/python
 .PHONY: run_seccomp_cooked
 run_seccomp_cooked: examples/python_hello.seccomp
 	touch dummy
-	../ukvm-bin.seccomp --disk=dummy --net=tap100 examples/python_hello.seccomp '{"cmdline":"examples/python.bin -m hello","env":"PYTHONHOME=/python","net":{"if":"ukvmif0","cloner":"True","type":"inet","method":"static","addr":"10.0.0.2","mask":"16"}}' 
+	../ukvm-bin.seccomp --disk=dummy --net=tap100 examples/python_hello.seccomp '{"cmdline":"examples/python_hello.seccomp -m hello","env":"PYTHONHOME=/python","net":{"if":"ukvmif0","cloner":"True","type":"inet","method":"static","addr":"10.0.0.2","mask":"16"}}' 
 
 
 
@@ -332,13 +332,13 @@ run_flask_ukvm_cooked: python_flask.fs build/python
 
 .PHONY: run_flask_seccomp
 run_flask_seccomp: python_flask.iso python.seccomp
-	../ukvm-bin.seccomp --disk=python_flask.iso --net=tap100 python.seccomp '{"cmdline":"examples/python.bin -m flask_main","env":"PYTHONHOME=/python","net":{"if":"ukvmif0","cloner":"True","type":"inet","method":"static","addr":"10.0.0.2","mask":"16"},"blk":{"source":"etfs","path":"/dev/ld0a","fstype":"blk","mountpoint":"/python"}}' 
+	../ukvm-bin.seccomp --disk=python_flask.iso --net=tap100 python.seccomp '{"cmdline":"python.seccomp -m flask_main","env":"PYTHONHOME=/python","net":{"if":"ukvmif0","cloner":"True","type":"inet","method":"static","addr":"10.0.0.2","mask":"16"},"blk":{"source":"etfs","path":"/dev/ld0a","fstype":"blk","mountpoint":"/python"}}' 
 
 .PHONY: run_flask_seccomp_cooked
 run_flask_seccomp_cooked: python_flask.fs build/python
 	rumprun-bake -m "add python_flask.fs" solo5_ukvm_seccomp examples/python_flask.seccomp build/python
 	touch dummy
-	../ukvm-bin.seccomp --disk=dummy --net=tap100 examples/python_flask.seccomp '{"cmdline":"examples/python.bin -m flask_main","env":"PYTHONHOME=/python","net":{"if":"ukvmif0","cloner":"True","type":"inet","method":"static","addr":"10.0.0.2","mask":"16"}}' 
+	../ukvm-bin.seccomp --disk=dummy --net=tap100 examples/python_flask.seccomp '{"cmdline":"examples/python_flask.seccomp -m flask_main","env":"PYTHONHOME=/python","net":{"if":"ukvmif0","cloner":"True","type":"inet","method":"static","addr":"10.0.0.2","mask":"16"}}' 
 
 .PHONY: run_bm_tornado_ukvm
 run_bm_tornado_ukvm: python_bm_tornado.iso python.ukvm
@@ -346,17 +346,17 @@ run_bm_tornado_ukvm: python_bm_tornado.iso python.ukvm
 
 .PHONY: run_bm_tornado_seccomp
 run_bm_tornado_seccomp: python_bm_tornado.iso python.seccomp
-	../ukvm-bin.seccomp --disk=python_bm_tornado.iso --net=tap100 python.seccomp '{"cmdline":"examples/python.bin -m bm_tornado_http","env":"PYTHONHOME=/python","net":{"if":"ukvmif0","cloner":"True","type":"inet","method":"static","addr":"10.0.0.2","mask":"16"},"blk":{"source":"etfs","path":"/dev/ld0a","fstype":"blk","mountpoint":"/python"}}' 
+	../ukvm-bin.seccomp --disk=python_bm_tornado.iso --net=tap100 python.seccomp '{"cmdline":"python.seccomp -m bm_tornado_http","env":"PYTHONHOME=/python","net":{"if":"ukvmif0","cloner":"True","type":"inet","method":"static","addr":"10.0.0.2","mask":"16"},"blk":{"source":"etfs","path":"/dev/ld0a","fstype":"blk","mountpoint":"/python"}}' 
 
 .PHONY: run_bm_tornado_server_seccomp
 run_bm_tornado_server_seccomp: python_bm_tornado.iso python.seccomp
-	../ukvm-bin.seccomp --disk=python_bm_tornado.iso --net=tap100 python.seccomp '{"cmdline":"examples/python.bin -m tornado_main","env":"PYTHONHOME=/python","net":{"if":"ukvmif0","cloner":"True","type":"inet","method":"static","addr":"10.0.0.2","mask":"16"},"blk":{"source":"etfs","path":"/dev/ld0a","fstype":"blk","mountpoint":"/python"}}' 
+	../ukvm-bin.seccomp --disk=python_bm_tornado.iso --net=tap100 python.seccomp '{"cmdline":"python.seccomp -m tornado_main","env":"PYTHONHOME=/python","net":{"if":"ukvmif0","cloner":"True","type":"inet","method":"static","addr":"10.0.0.2","mask":"16"},"blk":{"source":"etfs","path":"/dev/ld0a","fstype":"blk","mountpoint":"/python"}}' 
 
 .PHONY: run_bm_tornado_seccomp_cooked
 run_bm_tornado_seccomp_cooked: python_tornado.fs python.seccomp
 	rumprun-bake -m "add python_tornado.fs" solo5_ukvm_seccomp examples/python_tornado.seccomp build/python
 	touch dummy
-	../ukvm-bin.seccomp --disk=dummy --net=tap100 examples/python_tornado.seccomp '{"cmdline":"examples/python.bin -m bm_tornado_http","env":"PYTHONHOME=/python","net":{"if":"ukvmif0","cloner":"True","type":"inet","method":"static","addr":"10.0.0.2","mask":"16"}}' 
+	../ukvm-bin.seccomp --disk=dummy --net=tap100 examples/python_tornado.seccomp '{"cmdline":"examples/python_tornado.seccomp -m bm_tornado_http","env":"PYTHONHOME=/python","net":{"if":"ukvmif0","cloner":"True","type":"inet","method":"static","addr":"10.0.0.2","mask":"16"}}' 
 
 .PHONY: run_hw_fs
 run_hw_fs:
