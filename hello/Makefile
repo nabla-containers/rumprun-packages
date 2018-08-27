@@ -1,5 +1,4 @@
 include ../Makefile.inc
-UPSTREAM=hello.tar.gz
 
 all: bin/hello.seccomp
 
@@ -12,8 +11,7 @@ build/hello.seccomp: build/configure
 
 build/configure:
 	mkdir -p build
-	cp hello.tar.gz build
-	(cd build && tar -xz --strip-components 1 -f hello.tar.gz)
+	cp src/* build
 
 .PHONY: clean
 clean:
