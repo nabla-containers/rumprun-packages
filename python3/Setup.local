@@ -1,0 +1,31 @@
+# Edit this file for local setup changes
+
+#cStringIO cStringIO.c
+#cPickle cPickle.c
+#_collections _collectionsmodule.c
+#_operator _operator.c
+#itertools itertoolsmodule.c
+#_functools _functoolsmodule.c
+#time timemodule.c
+math mathmodule.c _math.c
+
+
+# not required, but loaded if found:
+
+_bisect _bisectmodule.c
+#_ctypes _ctypes/_ctypes.c #hmm, need to include ffi.h but not sure which one
+_heapq _heapqmodule.c
+_struct _struct.c
+grp grpmodule.c
+#strop stropmodule.c
+#_ctypes _ctypes/_ctypes.c _ctypes/callbacks.c _ctypes/callproc.c _ctypes/cfield.c _ctypes/malloc_closure.c _ctypes/stgdict.c -I/home/suneja/_ctypes/libffi/build1/lib/libffi-3.1/include  /home/suneja/_ctypes/libffi/build1/lib/libffi.a -ldl
+#_ctypes _ctypes/_ctypes.c _ctypes/callbacks.c _ctypes/callproc.c _ctypes/cfield.c _ctypes/malloc_closure.c _ctypes/stgdict.c /home/suneja/_ctypes/libffi/build1/lib/libffi.a -I/home/suneja/_ctypes/libffi/build1/lib/libffi-3.1/include
+#_ctypes _ctypes/_ctypes.c _ctypes/callbacks.c _ctypes/callproc.c _ctypes/cfield.c _ctypes/malloc_closure.c _ctypes/stgdict.c /home/suneja/_ctypes/libffi-3.2.1/build1/lib/libffi.a -I/home/suneja/_ctypes/libffi-3.2.1/build1/lib/libffi-3.2.1/include
+
+#array arraymodule.c	# array objects
+#cmath cmathmodule.c _math.c # -lm # complex math library functions
+#_testcapi _testcapimodule.c    # Python C API test module
+#_random _randommodule.c	# Random number generator
+#_elementtree -I$(srcdir)/Modules/expat -DHAVE_EXPAT_CONFIG_H -DUSE_PYEXPAT_CAPI _elementtree.c	# elementtree accelerator
+_pickle _pickle.c	# pickle accelerator
+_datetime _datetimemodule.c	# date/time type

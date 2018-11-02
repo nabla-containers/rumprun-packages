@@ -1,0 +1,49 @@
+--- a/Lib/importlib/_bootstrap.py.orig	2016-06-25 17:38:36.000000000 -0400
++++ b/Lib/importlib/_bootstrap.py	2018-10-10 12:04:06.271757711 -0400
+@@ -408,8 +408,9 @@
+         if self._cached is None:
+             if self.origin is not None and self._set_fileattr:
+                 if _bootstrap_external is None:
+-                    raise NotImplementedError
+-                self._cached = _bootstrap_external._get_cached(self.origin)
++                    self._cached = None
++                else:
++                    self._cached = _bootstrap_external._get_cached(self.origin)
+         return self._cached
+ 
+     @cached.setter
+@@ -715,12 +716,16 @@
+ 
+     @classmethod
+     def find_spec(cls, fullname, path=None, target=None):
+-        if path is not None:
+-            return None
+         if _imp.is_builtin(fullname):
+-            return spec_from_loader(fullname, cls, origin='built-in')
+-        else:
++            _Py_PackageContext = fullname
++            spec = spec_from_loader(fullname, cls, origin='built-in')
++            spec.origin = fullname
++            spec.has_location = True
++            spec._set_fileattr = True
++            return spec    
++        if path is not None:
+             return None
++        return None
+ 
+     @classmethod
+     def find_module(cls, fullname, path=None):
+@@ -789,7 +794,12 @@
+     @classmethod
+     def find_spec(cls, fullname, path=None, target=None):
+         if _imp.is_frozen(fullname):
+-            return spec_from_loader(fullname, cls, origin='frozen')
++            _Py_PackageContext = fullname
++            spec = spec_from_loader(fullname, cls, origin='frozen')
++            spec.origin = fullname
++            spec.has_location = True
++            spec._set_fileattr = True
++            return spec    
+         else:
+             return None
+ 

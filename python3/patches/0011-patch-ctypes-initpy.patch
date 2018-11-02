@@ -1,0 +1,14 @@
+--- a/Lib/ctypes/__init__.py.orig	2018-10-18 13:22:32.534845914 -0400
++++ b/Lib/ctypes/__init__.py	2018-10-18 13:22:41.574679956 -0400
+@@ -344,7 +344,10 @@
+         self._FuncPtr = _FuncPtr
+ 
+         if handle is None:
+-            self._handle = _dlopen(self._name, mode)
++            try:
++                self._handle = _dlopen(self._name, mode)
++            except:    
++                self._handle = handle
+         else:
+             self._handle = handle
+ 
