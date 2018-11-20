@@ -1,0 +1,15 @@
+--- a/Lib/modulefinder.py.org	2018-10-17 22:21:14.575794062 -0400
++++ b/Lib/modulefinder.py	2018-10-17 22:21:37.295727867 -0400
+@@ -440,9 +440,9 @@
+             fullname = parent.__name__+'.'+name
+         else:
+             fullname = name
+-        if fullname in self.excludes:
+-            self.msgout(3, "find_module -> Excluded", fullname)
+-            raise ImportError(name)
++        #if fullname in self.excludes:
++        #    self.msgout(3, "find_module -> Excluded", fullname)
++        #    raise ImportError(name)
+ 
+         if path is None:
+             if name in sys.builtin_module_names:

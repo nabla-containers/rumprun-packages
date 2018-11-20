@@ -1,0 +1,31 @@
+--- a/Modules/Setup.dist.orig	2018-10-09 11:09:37.132893594 -0400
++++ b/Modules/Setup.dist	2018-10-10 13:06:45.420555030 -0400
+@@ -177,10 +177,10 @@
+ #_testcapi _testcapimodule.c    # Python C API test module
+ _random _randommodule.c	# Random number generator
+ _elementtree -I$(srcdir)/Modules/expat -DHAVE_EXPAT_CONFIG_H -DUSE_PYEXPAT_CAPI _elementtree.c	# elementtree accelerator
+-#_pickle _pickle.c	# pickle accelerator
++_pickle _pickle.c	# pickle accelerator
+ _datetime _datetimemodule.c	# datetime accelerator
+-#_bisect _bisectmodule.c	# Bisection algorithms
+-#_heapq _heapqmodule.c	# Heap queue algorithm
++_bisect _bisectmodule.c	# Bisection algorithms
++_heapq _heapqmodule.c	# Heap queue algorithm
+ 
+ unicodedata unicodedata.c    # static Unicode character database
+ 
+@@ -191,7 +191,7 @@
+ 
+ fcntl fcntlmodule.c	# fcntl(2) and ioctl(2)
+ #spwd spwdmodule.c		# spwd(3)
+-#grp grpmodule.c		# grp(3)
++grp grpmodule.c		# grp(3)
+ select selectmodule.c	# select(2); not on ancient System V
+ 
+ # Memory-mapped files (also works on Win32).
+@@ -402,3 +402,5 @@
+   -DMODULE_NAME$(SQLITE_MODULE_NAME)
+ 
+ greenlet greenlet.c -I$(prefix)/include -L$(exec_prefix)/lib
++
++_ctypes _ctypes/_ctypes.c _ctypes/callbacks.c _ctypes/callproc.c _ctypes/cfield.c _ctypes/malloc_closure.c _ctypes/stgdict.c ../../pkgs/lib/libffi.a -I../../pkgs/lib/libffi-3.2.1/include
