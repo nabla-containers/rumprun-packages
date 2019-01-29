@@ -1,16 +1,23 @@
 include ../Makefile.inc
 
+
 UPSTREAM=https://www.python.org/ftp/python/3.5.2/Python-3.5.2.tar.xz
 TARBALL=$(notdir $(UPSTREAM))
 ARCH=$(shell $(HOST_CC) -dumpmachine)
+HOSTINCLUDE=$(shell dirname $(shell gcc -v 2>&1  | grep COLLECT_LTO_WRAPPER | cut -f2 -d'='))/include
 
-all: libssl $(RUMPRUN_PKGS_DIR)/lib/libsqlite.a images/python.iso
+
+all: libssl $(RUMPRUN_PKGS_DIR)/lib/libsqlite.a $(RUMPRUN_PKGS_DIR)/lib/libffi.a  images/python.iso
 
 .NOTPARALLEL: $(RUMPRUN_PKGS_DIR)/lib/libsqlite.a
 $(RUMPRUN_PKGS_DIR)/lib/libsqlite.a:
 	$(MAKE) -C ../sqlite
 
-build/python: build/Makefile libssl $(RUMPRUN_PKGS_DIR)/lib/libsqlite.a
+.NOTPARALLEL: $(RUMPRUN_PKGS_DIR)/lib/libffi.a
+$(RUMPRUN_PKGS_DIR)/lib/libffi.a:
+	$(MAKE) -C ../libffi
+
+build/python: build/Makefile libssl $(RUMPRUN_PKGS_DIR)/lib/libsqlite.a $(RUMPRUN_PKGS_DIR)/lib/libffi.a 
 	$(MAKE) -C build
 	$(MAKE) -C build install
 
@@ -38,7 +45,8 @@ dl/$(TARBALL):
 build/hostpython: | dl/$(TARBALL)
 	mkdir -p build
 	(cd build && tar -x --strip-components 1 -f ../dl/$(TARBALL))
-	(cd build; ./configure --prefix=$(shell pwd)/build/hostdist; make python Parser/pgen && make install)
+	cp Setup.local build/Modules/
+	(cd build; ./configure --prefix=$(shell pwd)/build/hostdist; make && make install)
 	mv build/python build/hostpython
 
 build/Parser/hostpgen: build/hostpython
@@ -48,18 +56,14 @@ build/Programs/host_freeze_importlib: build/Parser/hostpgen
 	cp build/Programs/_freeze_importlib build/Programs/host_freeze_importlib
 
 build/configure: build/Programs/host_freeze_importlib
-	(cd build; make distclean)
+	(cd build; mv hostdist ..; make distclean; mv ../hostdist .)
 
 build/stamp_patch: build/configure patches/*
 	cp config.site build/
 	(cd build && ../../scripts/apply-patches.sh ./ ../patches/*)
-	wget --no-clobber https://github.com/numpy/numpy/releases/download/v1.12.1/numpy-1.12.1.tar.gz
-	rm -rf numpy-1.12.1
-	rm -rf build/Modules/numpy
-	tar xzvf numpy-1.12.1.tar.gz
-	cp -R numpy-1.12.1/numpy/core build/Modules/numpy
 	cp -R files/* build/Modules/
 	touch $@
+	cp -r build/ Python-3.5.2/
 
 build/Makefile: build/stamp_patch
 	(cd build; $(PYTHON_CONF_ENV) ./configure $(PYTHON_CONF_OPTS))
@@ -67,6 +71,35 @@ build/Makefile: build/stamp_patch
 images/python.iso: build/python
 	mkdir -p images
 	$(RUMPRUN_GENISOIMAGE) -o images/python.iso build/pythondist/lib/python3.5
+
+build_numpy: build/python
+	wget https://github.com/numpy/numpy/archive/v1.7.2.tar.gz && tar -zxf v1.7.2.tar.gz
+	(cd numpy-1.7.2; CC=$(RUMPRUN_CC) CFLAGS=-I$(HOSTINCLUDE)  ../build/hostdist/bin/python3 setup.py  install --prefix $(shell pwd)/build/pythondist/)
+
+freeze_python: build_numpy
+	rm -rf freezeOutput
+	mkdir freezeOutput
+	(cd freezeOutput; echo "import encodings.aliases" >> freezeInputScript.py; echo "import encodings.ascii" >> freezeInputScript.py; echo "import numpy" >> freezeInputScript.py)
+	PYTHONHOME=$(shell pwd)/build/pythondist/  PYTHONPATH=$(shell pwd)/build/pythondist/lib/python3.5/site-packages/ CC=$(RUMPRUN_CC) CFLAGS=-I$(HOSTINCLUDE) build/hostdist/bin/python3 -S build/Tools/freeze/freeze.py -o freezeOutput -p $(shell pwd)/Python-3.5.2/ freezeOutput/freezeInputScript.py
+	(cd freezeOutput; numberOfLines=$(shell cat frozen.c | wc -l);  numberOfLinesToKeep=$$(($$numberOfLines - 9)); head -n $$numberOfLinesToKeep frozen.c > frozen.h)
+
+#https://github.com/patmarion/NumpyBuiltinExample
+build_python_numpy: freeze_python
+	(cd examples/pythonNumpy;\
+	frozenSources="$(shell find $(shell pwd)/freezeOutput/ -name M_\*.c)";\
+	numpyObjects="$(shell find $(shell pwd)/numpy-1.7.2/build/ -name \*.o)";\
+	$(RUMPRUN_CC) -g -Xlinker -export-dynamic -o pythonNumpy pythonNumpy.c -I$(shell pwd)/build/pythondist/include/python3.5m -L${RUMPRUN_PKGS_DIR}/lib -I${RUMPRUN_PKGS_DIR}/include -I$(shell pwd)/freezeOutput $$frozenSources $$numpyObjects $(shell pwd)/build/pythondist/lib/libpython3.5m.a  -lpthread -lm -lutil -lsqlite3 -lz -lssl -ltls -lcrypto -lffi)
+
+run_python_numpy: build_python_numpy
+	(cd examples/pythonNumpy;\
+	rumprun-bake solo5_ukvm_seccomp pythonNumpy.seccomp pythonNumpy;\
+	rm -rf fs; mkdir -p fs/lib;\
+	cp numpyApp.py test.py fs/;\
+	cp -r $(shell pwd)/build/pythondist/lib/python3.5 fs/lib/;\
+	$(RUMPRUN_GENISOIMAGE) -o fs.iso fs;\
+	./ukvm-bin  --disk=fs.iso --net=tap100 pythonNumpy.seccomp   '{"cmdline":"./pythonNumpy.seccomp /python/numpyApp.py","env":"PYTHONHOME=/python","blk":{"source":"etfs","path":"/dev/ld0a","fstype":"blk","mountpoint":"/python"}}';\
+	./ukvm-bin  --disk=fs.iso --net=tap100 pythonNumpy.seccomp   '{"cmdline":"./pythonNumpy.seccomp /python/test.py","env":"PYTHONHOME=/python","blk":{"source":"etfs","path":"/dev/ld0a","fstype":"blk","mountpoint":"/python"}}')
+
 
 python.fs: examples/main.py
 	rm -rf python
@@ -81,6 +114,7 @@ python_hello.fs: examples/hello.py
 	cp -r build/pythondist/lib/python3.5 python/lib/.
 	cp examples/hello.py python/lib/python3.5/site-packages/.
 	x86_64-rumprun-netbsd-cookfs python_hello.fs python
+
 
 python_hello.iso: examples/hello.py
 	rm -rf python
@@ -265,7 +299,7 @@ run_ukvm: python_hello.iso python.ukvm
 
 .PHONY: run_seccomp
 run_seccomp: python_hello.iso python.seccomp
-	../ukvm-bin.seccomp --disk=python_hello.iso --net=tap100 python.seccomp '{"cmdline":"examples/python.bin -m hello","env":"PYTHONHOME=/python","net":{"if":"ukvmif0","cloner":"True","type":"inet","method":"static","addr":"10.0.0.2","mask":"16"},"blk":{"source":"etfs","path":"/dev/ld0a","fstype":"blk","mountpoint":"/python"}}' 
+	../ukvm-bin.seccomp --disk=python_hello.iso --net=tap100 python.seccomp '{"cmdline":"python.seccomp -m hello","env":"PYTHONHOME=/python","net":{"if":"ukvmif0","cloner":"True","type":"inet","method":"static","addr":"10.0.0.2","mask":"16"},"blk":{"source":"etfs","path":"/dev/ld0a","fstype":"blk","mountpoint":"/python"}}' 
 
 examples/python_hello.ukvm: python_hello.fs build/python
 	rumprun-bake -m "add python_hello.fs" solo5_ukvm_net examples/python_hello.ukvm build/python
@@ -281,7 +315,7 @@ examples/python_hello.seccomp: python_hello.fs build/python
 .PHONY: run_seccomp_cooked
 run_seccomp_cooked: examples/python_hello.seccomp
 	touch dummy
-	../ukvm-bin.seccomp --disk=dummy --net=tap100 examples/python_hello.seccomp '{"cmdline":"examples/python.bin -m hello","env":"PYTHONHOME=/python","net":{"if":"ukvmif0","cloner":"True","type":"inet","method":"static","addr":"10.0.0.2","mask":"16"}}' 
+	../ukvm-bin.seccomp --disk=dummy --net=tap100 examples/python_hello.seccomp '{"cmdline":"examples/python_hello.seccomp -m hello","env":"PYTHONHOME=/python","net":{"if":"ukvmif0","cloner":"True","type":"inet","method":"static","addr":"10.0.0.2","mask":"16"}}' 
 
 
 
@@ -332,13 +366,13 @@ run_flask_ukvm_cooked: python_flask.fs build/python
 
 .PHONY: run_flask_seccomp
 run_flask_seccomp: python_flask.iso python.seccomp
-	../ukvm-bin.seccomp --disk=python_flask.iso --net=tap100 python.seccomp '{"cmdline":"examples/python.bin -m flask_main","env":"PYTHONHOME=/python","net":{"if":"ukvmif0","cloner":"True","type":"inet","method":"static","addr":"10.0.0.2","mask":"16"},"blk":{"source":"etfs","path":"/dev/ld0a","fstype":"blk","mountpoint":"/python"}}' 
+	../ukvm-bin.seccomp --disk=python_flask.iso --net=tap100 python.seccomp '{"cmdline":"python.seccomp -m flask_main","env":"PYTHONHOME=/python","net":{"if":"ukvmif0","cloner":"True","type":"inet","method":"static","addr":"10.0.0.2","mask":"16"},"blk":{"source":"etfs","path":"/dev/ld0a","fstype":"blk","mountpoint":"/python"}}' 
 
 .PHONY: run_flask_seccomp_cooked
 run_flask_seccomp_cooked: python_flask.fs build/python
 	rumprun-bake -m "add python_flask.fs" solo5_ukvm_seccomp examples/python_flask.seccomp build/python
 	touch dummy
-	../ukvm-bin.seccomp --disk=dummy --net=tap100 examples/python_flask.seccomp '{"cmdline":"examples/python.bin -m flask_main","env":"PYTHONHOME=/python","net":{"if":"ukvmif0","cloner":"True","type":"inet","method":"static","addr":"10.0.0.2","mask":"16"}}' 
+	../ukvm-bin.seccomp --disk=dummy --net=tap100 examples/python_flask.seccomp '{"cmdline":"examples/python_flask.seccomp -m flask_main","env":"PYTHONHOME=/python","net":{"if":"ukvmif0","cloner":"True","type":"inet","method":"static","addr":"10.0.0.2","mask":"16"}}' 
 
 .PHONY: run_bm_tornado_ukvm
 run_bm_tornado_ukvm: python_bm_tornado.iso python.ukvm
@@ -346,17 +380,17 @@ run_bm_tornado_ukvm: python_bm_tornado.iso python.ukvm
 
 .PHONY: run_bm_tornado_seccomp
 run_bm_tornado_seccomp: python_bm_tornado.iso python.seccomp
-	../ukvm-bin.seccomp --disk=python_bm_tornado.iso --net=tap100 python.seccomp '{"cmdline":"examples/python.bin -m bm_tornado_http","env":"PYTHONHOME=/python","net":{"if":"ukvmif0","cloner":"True","type":"inet","method":"static","addr":"10.0.0.2","mask":"16"},"blk":{"source":"etfs","path":"/dev/ld0a","fstype":"blk","mountpoint":"/python"}}' 
+	../ukvm-bin.seccomp --disk=python_bm_tornado.iso --net=tap100 python.seccomp '{"cmdline":"python.seccomp -m bm_tornado_http","env":"PYTHONHOME=/python","net":{"if":"ukvmif0","cloner":"True","type":"inet","method":"static","addr":"10.0.0.2","mask":"16"},"blk":{"source":"etfs","path":"/dev/ld0a","fstype":"blk","mountpoint":"/python"}}' 
 
 .PHONY: run_bm_tornado_server_seccomp
 run_bm_tornado_server_seccomp: python_bm_tornado.iso python.seccomp
-	../ukvm-bin.seccomp --disk=python_bm_tornado.iso --net=tap100 python.seccomp '{"cmdline":"examples/python.bin -m tornado_main","env":"PYTHONHOME=/python","net":{"if":"ukvmif0","cloner":"True","type":"inet","method":"static","addr":"10.0.0.2","mask":"16"},"blk":{"source":"etfs","path":"/dev/ld0a","fstype":"blk","mountpoint":"/python"}}' 
+	../ukvm-bin.seccomp --disk=python_bm_tornado.iso --net=tap100 python.seccomp '{"cmdline":"python.seccomp -m tornado_main","env":"PYTHONHOME=/python","net":{"if":"ukvmif0","cloner":"True","type":"inet","method":"static","addr":"10.0.0.2","mask":"16"},"blk":{"source":"etfs","path":"/dev/ld0a","fstype":"blk","mountpoint":"/python"}}' 
 
 .PHONY: run_bm_tornado_seccomp_cooked
 run_bm_tornado_seccomp_cooked: python_tornado.fs python.seccomp
 	rumprun-bake -m "add python_tornado.fs" solo5_ukvm_seccomp examples/python_tornado.seccomp build/python
 	touch dummy
-	../ukvm-bin.seccomp --disk=dummy --net=tap100 examples/python_tornado.seccomp '{"cmdline":"examples/python.bin -m bm_tornado_http","env":"PYTHONHOME=/python","net":{"if":"ukvmif0","cloner":"True","type":"inet","method":"static","addr":"10.0.0.2","mask":"16"}}' 
+	../ukvm-bin.seccomp --disk=dummy --net=tap100 examples/python_tornado.seccomp '{"cmdline":"examples/python_tornado.seccomp -m bm_tornado_http","env":"PYTHONHOME=/python","net":{"if":"ukvmif0","cloner":"True","type":"inet","method":"static","addr":"10.0.0.2","mask":"16"}}' 
 
 .PHONY: run_hw_fs
 run_hw_fs:
