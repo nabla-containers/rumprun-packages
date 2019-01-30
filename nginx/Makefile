@@ -86,21 +86,18 @@ run_hw: bin/nginx
 	rumprun-bake -m "add data.fs" hw_generic bin/nginx.bin bin/nginx
 	rumprun qemu -i -I if,vioif,"-net tap,script=no,ifname=tap100" -W if,inet,static,10.0.0.2/24 -- bin/nginx.bin -c /data/conf/nginx.conf
 
+bin/nginx.ukvm: bin/nginx
+	rumprun-bake solo5_hvt bin/nginx.ukvm bin/nginx
+
+bin/nginx.seccomp: bin/nginx
+	rumprun-bake solo5_spt bin/nginx.seccomp bin/nginx
+
 .PHONY: run_ukvm
-run_ukvm: bin/nginx
-	x86_64-rumprun-netbsd-cookfs data.fs data
-	rumprun-bake -m "add data.fs" solo5_ukvm_net bin/nginx.ukvm bin/nginx
-	touch dummy
-	../ukvm-bin.vm --disk=dummy --net=tap100 bin/nginx.ukvm '{"cmdline":"bin/nginx.ukvm -c /data/conf/nginx.conf","net":{"if":"ukvmif0","cloner":"True","type":"inet","method":"static","addr":"10.0.0.2","mask":"16"}}'
-
-bin/nginx.seccomp:
-	rumprun-bake solo5_ukvm_seccomp bin/nginx.seccomp bin/nginx
-
-bin/nginx.ukvm:
-	rumprun-bake solo5_ukvm_net bin/nginx.ukvm bin/nginx
+run_ukvm: bin/nginx.ukvm images/data.iso
+	../../rumprun/solo5/tenders/hvt/solo5-hvt --disk=images/data.iso --net=tap100 bin/nginx.ukvm '{"cmdline":"bin/nginx.ukvm -c /data/conf/nginx.conf","net":{"if":"ukvmif0","cloner":"True","type":"inet","method":"static","addr":"10.0.0.2","mask":"16"},"blk":{"source":"etfs","path":"/dev/ld0a","fstype":"blk","mountpoint":"/data"}}'
 
 run_seccomp: bin/nginx.seccomp images/data.iso
-	../ukvm-bin.seccomp --disk=images/data.iso --net=tap100 bin/nginx.seccomp '{"cmdline":"bin/nginx.seccomp -c /data/conf/nginx.conf","net":{"if":"ukvmif0","cloner":"True","type":"inet","method":"static","addr":"10.0.0.2","mask":"16"},"blk":{"source":"etfs","path":"/dev/ld0a","fstype":"blk","mountpoint":"/data"}}'
+	../../rumprun/solo5/tenders/spt/solo5-spt --disk=images/data.iso --net=tap100 bin/nginx.seccomp '{"cmdline":"bin/nginx.seccomp -c /data/conf/nginx.conf","net":{"if":"ukvmif0","cloner":"True","type":"inet","method":"static","addr":"10.0.0.2","mask":"16"},"blk":{"source":"etfs","path":"/dev/ld0a","fstype":"blk","mountpoint":"/data"}}'
 
 run_seccomp_gdb: bin/nginx.seccomp
 	touch dummy

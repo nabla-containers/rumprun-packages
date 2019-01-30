@@ -291,7 +291,7 @@ python.ukvm: build/python
 	rumprun-bake solo5_ukvm_net python.ukvm build/python
 
 python.seccomp: build/python
-	rumprun-bake solo5_ukvm_seccomp python.seccomp build/python
+	rumprun-bake solo5_spt python.seccomp build/python
 
 .PHONY: run_ukvm
 run_ukvm: python_hello.iso python.ukvm
@@ -384,7 +384,7 @@ run_bm_tornado_seccomp: python_bm_tornado.iso python.seccomp
 
 .PHONY: run_bm_tornado_server_seccomp
 run_bm_tornado_server_seccomp: python_bm_tornado.iso python.seccomp
-	../ukvm-bin.seccomp --disk=python_bm_tornado.iso --net=tap100 python.seccomp '{"cmdline":"python.seccomp -m tornado_main","env":"PYTHONHOME=/python","net":{"if":"ukvmif0","cloner":"True","type":"inet","method":"static","addr":"10.0.0.2","mask":"16"},"blk":{"source":"etfs","path":"/dev/ld0a","fstype":"blk","mountpoint":"/python"}}' 
+	../../rumprun/solo5/tenders/spt/solo5-spt --disk=python_bm_tornado.iso --net=tap100 python.seccomp '{"cmdline":"python.seccomp -m tornado_main","env":"PYTHONHOME=/python","net":{"if":"ukvmif0","cloner":"True","type":"inet","method":"static","addr":"10.0.0.2","mask":"16"},"blk":{"source":"etfs","path":"/dev/ld0a","fstype":"blk","mountpoint":"/python"}}' 
 
 .PHONY: run_bm_tornado_seccomp_cooked
 run_bm_tornado_seccomp_cooked: python_tornado.fs python.seccomp
