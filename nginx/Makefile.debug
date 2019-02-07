@@ -1,0 +1,53 @@
+.PHONY: run_hw
+run_hw: bin/nginx.bin
+	rumprun qemu -i -I if,vioif,"-net tap,script=no,ifname=tap100" -W if,inet,static,10.0.0.2/24 -- $< -c /data/conf/nginx.conf
+
+.PHONY: run_hvt
+run_hvt: bin/nginx.hvt images/data.iso
+	$(SOLO5_HVT) --disk=images/data.iso --net=tap100 $< '{"cmdline":"$< -c /data/conf/nginx.conf","net":{"if":"ukvmif0","cloner":"True","type":"inet","method":"static","addr":"10.0.0.2","mask":"16"},"blk":{"source":"etfs","path":"/dev/ld0a","fstype":"blk","mountpoint":"/data"}}'
+
+.PHONY: run_spt
+run_spt: bin/nginx.spt images/data.iso
+	$(SOLO5_SPT) --disk=images/data.iso --net=tap100 $< '{"cmdline":"$< -c /data/conf/nginx.conf","net":{"if":"ukvmif0","cloner":"True","type":"inet","method":"static","addr":"10.0.0.2","mask":"16"},"blk":{"source":"etfs","path":"/dev/ld0a","fstype":"blk","mountpoint":"/data"}}'
+
+.PHONY: run_spt_gdb
+run_spt_gdb: bin/nginx.spt images/data.iso
+	cgdb --ex="b spt_launch" --ex="r --disk=images/data.iso --net=tap100 $< '{\"cmdline\":\"$< -c /data/conf/nginx.conf\",\"net\":{\"if\":\"ukvmif0\",\"cloner\":\"True\",\"type\":\"inet\",\"method\":\"static\",\"addr\":\"10.0.0.2\",\"mask\":\"16\"},\"blk\":{\"source\":\"etfs\",\"path\":\"/dev/ld0a\",\"fstype\":\"blk\",\"mountpoint\":\"/data\"}}'" --ex="add-symbol-file $< 0x100000" $(SOLO5_SPT)
+
+.PHONY: run_spt_gdb2
+run_spt_gdb2: bin/nginx.spt images/data.iso
+	cgdb --ex="b spt_launch" --ex="r --disk=images/data.iso --net=tap100 $< '{\"cmdline\":\"$< -c /data/conf/nginx.conf\",\"net\":{\"if\":\"ukvmif0\",\"cloner\":\"True\",\"type\":\"inet\",\"method\":\"static\",\"addr\":\"10.0.0.2\",\"mask\":\"16\"},\"blk\":{\"source\":\"etfs\",\"path\":\"/dev/ld0a\",\"fstype\":\"blk\",\"mountpoint\":\"/data\"}}'" --ex="add-symbol-file $< 0x100000" \
+	--ex="b solo5_app_main" \
+	--ex="b rumpuser_clock_sleep" \
+	--ex="b rumpcomp_ukvmif_receive" \
+	--ex="b solo5_yield" \
+	--ex="b schedule" \
+	--ex="b rump_schedlock_cv_wait" \
+	--ex="b sched_switch" \
+	--ex="ignore 2 10000000" \
+	--ex="ignore 3 10000000" \
+	--ex="ignore 4 10000000" \
+	--ex="ignore 5 10000000" \
+	--ex="ignore 6 10000000" \
+	--ex="ignore 7 10000000" \
+	--ex="c" \
+	$(SOLO5_SPT)
+
+.PHONY: run_spt_perf
+run_spt_perf: bin/nginx.spt images/data.iso
+	perf record -g -F 999 -d -- $(SOLO5_SPT) --disk=images/data.iso --net=tap100 $< '{"cmdline":"$< -c /data/conf/nginx.conf","net":{"if":"ukvmif0","cloner":"True","type":"inet","method":"static","addr":"10.0.0.2","mask":"16"},"blk":{"source":"etfs","path":"/dev/ld0a","fstype":"blk","mountpoint":"/data"}}'
+
+nginx.spt.map: bin/nginx.spt
+	#nm bin/nginx.spt > nginx.spt.map
+	bash -c "objdump -x bin/nginx.spt | awk '{ print \$$1, g, \$$NF }' > nginx.spt.map"
+	bash -c "objdump -x ../ukvm-bin.seccomp | awk '{ print \$$1, g, \$$NF }' >> nginx.spt.map"
+	#bash -c "objdump -x bin/nginx.spt | awk '{ print \$$1, \$$2, \$$NF }' > nginx.spt.map"
+
+.PHONY: flamegraph_seccomp
+flamegraph_seccomp: nginx.spt.map
+	cp nginx.spt.map /tmp/perf-19924.map
+	perf script  | ~/research/FlameGraph/stackcollapse-perf.pl --all --addrs | ~/research/FlameGraph/flamegraph.pl --color=java > out.svg
+
+flamegraph_gdb:
+	cat trace | ~/research/FlameGraph/stackcollapse-gdb.pl | ~/research/FlameGraph/flamegraph.pl --color=java > out.svg
+
