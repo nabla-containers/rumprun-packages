@@ -1,9 +1,8 @@
 bin/nginx.bin: bin/nginx
-	x86_64-rumprun-netbsd-cookfs data.fs data
-	rumprun-bake -m "add data.fs" hw_generic $@ $<
+	${RUMPRUN_BAKE} hw_generic $@ $<
 
 bin/nginx.hvt: bin/nginx
-	rumprun-bake solo5_hvt $@ $<
+	${RUMPRUN_BAKE} solo5_hvt $@ $<
 
 bin/nginx.spt: bin/nginx
-	rumprun-bake solo5_spt $@ $<
+	${RUMPRUN_BAKE} solo5_spt $@ $<
