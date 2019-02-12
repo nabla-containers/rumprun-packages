@@ -1,4 +1,5 @@
 include ../Makefile.inc
+include Makefile.bake
 include Makefile.debug
 
 UPSTREAM=http://nginx.org/download/nginx-1.8.0.tar.gz
@@ -70,16 +71,6 @@ images: images/data.iso
 
 images/data.iso: images/data/conf/* images/data/www/*
 	$(RUMPRUN_GENISOIMAGE) -o images/data.iso images/data
-
-bin/nginx.bin: bin/nginx
-	x86_64-rumprun-netbsd-cookfs data.fs data
-	rumprun-bake -m "add data.fs" hw_generic $@ $<
-
-bin/nginx.hvt: bin/nginx
-	rumprun-bake solo5_hvt $@ $<
-
-bin/nginx.spt: bin/nginx
-	rumprun-bake solo5_spt $@ $<
 
 .PHONY: clean
 clean:
