@@ -1,0 +1,12 @@
+
+bin/python.spt: build/python libssl $(RUMPRUN_PKGS_DIR)/lib/libsqlite.a
+	mkdir -p bin
+	${RUMPRUN_BAKE} solo5_spt $@ $<
+
+bin/python.hvt: build/python libssl $(RUMPRUN_PKGS_DIR)/lib/libsqlite.a
+	mkdir -p bin
+	${RUMPRUN_BAKE} solo5_hvt $@ $<
+
+bin/python.bin: build/python libssl $(RUMPRUN_PKGS_DIR)/lib/libsqlite.a
+	mkdir -p bin
+	${RUMPRUN_BAKE} hw_generic $@ $<
