@@ -3,9 +3,21 @@ include ../Makefile.inc
 EXPRESS_VERSION=4.13.3
 GHOST_VERSION=0.7.8
 
+include ${RUMPRUN_MKCONF}
+SOLO5_SPT = ${SOLO5SRC}/tenders/spt/solo5-spt
+SOLO5_HVT = ${SOLO5SRC}/tenders/hvt/solo5-hvt
+
 .PHONY: run_express_hello_world
 run_express_hello_world: express-$(EXPRESS_VERSION).iso
 	rumprun kvm -M 256 -I 'nic,vioif,-net user,hostfwd=tcp::3000-:3000' -W nic,inet,dhcp -i -b express-$(EXPRESS_VERSION).iso,/express ../$(NODE_BIN).bin /express/examples/hello-world/index.js
+
+.PHONY: run_express_hello_world_spt
+run_express_hello_world_spt: ../$(BUILD_DIR)/node.spt express-$(EXPRESS_VERSION).iso
+	${SOLO5_SPT} --disk=express-$(EXPRESS_VERSION).iso --net=tap100 $< '{"cmdline":"$< /express/examples/hello-world/index.js","net":{"if":"ukvmif0","cloner":"True","type":"inet","method":"static","addr":"10.0.0.2","mask":"16"},"blk":{"source":"etfs","path":"/dev/ld0a","fstype":"blk","mountpoint":"/express"}}'
+
+.PHONY: run_express_hello_world_hvt
+run_express_hello_world_hvt: ../$(BUILD_DIR)/node.hvt express-$(EXPRESS_VERSION).iso
+	${SOLO5_HVT} --disk=express-$(EXPRESS_VERSION).iso --net=tap100 $< '{"cmdline":"$< /express/examples/hello-world/index.js","net":{"if":"ukvmif0","cloner":"True","type":"inet","method":"static","addr":"10.0.0.2","mask":"16"},"blk":{"source":"etfs","path":"/dev/ld0a","fstype":"blk","mountpoint":"/express"}}'
 
 NAD=../../../node_modules/.bin/nad
 .PHONY: inject_ursa
@@ -17,57 +29,21 @@ inject_ursa: | node_modules/nad ursa/node_modules/ursa
 run_ursa: ursa.iso
 	rumprun kvm -M 256 -i -b ursa.iso,/ursa ../$(NODE_BIN).bin /ursa/test.js
 
-node-authservice.bin: authservice/authservice_app.js authservice/authservice/routes/index.js
-	rumprun-bake hw_generic node-authservice.bin ../build-4.3.0/out/Release/node-default
+.PHONY: run_express_hello_world_spt
+run_ursa_spt: ../$(BUILD_DIR)/node.spt ursa.iso
+	${SOLO5_SPT} --disk=ursa.iso --net=tap100 $< '{"cmdline":"$< /ursa/test.js","net":{"if":"ukvmif0","cloner":"True","type":"inet","method":"static","addr":"10.0.0.2","mask":"16"},"blk":{"source":"etfs","path":"/dev/ld0a","fstype":"blk","mountpoint":"/ursa"}}'
 
-authservice.iso: authservice/authservice_app.js authservice/authservice/routes/index.js
-	genisoimage -l -r -o authservice.iso authservice
+.PHONY: run_express_hello_world_hvt
+run_ursa_hvt: ../$(BUILD_DIR)/node.hvt ursa.iso
+	${SOLO5_HVT} --disk=ursa.iso --net=tap100 $< '{"cmdline":"$< /ursa/test.js","net":{"if":"ukvmif0","cloner":"True","type":"inet","method":"static","addr":"10.0.0.2","mask":"16"},"blk":{"source":"etfs","path":"/dev/ld0a","fstype":"blk","mountpoint":"/ursa"}}'
 
-authservice.fs: authservice/authservice_app.js authservice/authservice/routes/index.js
-	(cd authservice; npm install)
-	x86_64-rumprun-netbsd-cookfs authservice.fs authservice
+.PHONY: run_authservice_hvt
+run_authservice_hvt: ../$(BUILD_DIR)/node.hvt  authservice.iso
+	${SOLO5_HVT} --disk=authservice.iso --net=tap100 $< '{"cmdline":"$< /authservice/authservice_app.js","env":"CUSTOMER_SERVICE=10.0.0.4:5000","net":{"if":"ukvmif0","cloner":"True","type":"inet","method":"static","addr":"10.0.0.2","mask":"16"},"blk":{"source":"etfs","path":"/dev/ld0a","fstype":"blk","mountpoint":"/authservice"}}'
 
-authservice.ext2: authservice/authservice_app.js authservice/authservice/routes/index.js
-	(cd authservice; npm install)
-	dd if=/dev/zero of=authservice.ext2 count=40960 bs=1024
-	genext2fs -B 1024 -b 40960 -d authservice authservice.ext2
-
-node-authservice_cooked.ukvm: authservice.fs ../build-4.3.0/out/Release/node-default
-	rumprun-bake -m "add authservice.fs" solo5_ukvm_net node-authservice_cooked.ukvm ../build-4.3.0/out/Release/node-default
-
-node.ukvm: ../build-4.3.0/out/Release/node-default
-	rumprun-bake solo5_ukvm_net node.ukvm ../build-4.3.0/out/Release/node-default
-
-node-authservice_cooked.seccomp: authservice.fs ../build-4.3.0/out/Release/node-default
-	rumprun-bake -m "add authservice.fs" solo5_ukvm_seccomp node-authservice_cooked.seccomp ../build-4.3.0/out/Release/node-default
-
-.PHONY: run_authservice_cooked_ukvm
-run_authservice_cooked_ukvm: node-authservice_cooked.ukvm
-	touch dummy
-	../../ukvm-bin.vm --disk=dummy --net=tap100 node-authservice_cooked.ukvm '{"cmdline":"node.ukvm /authservice/authservice_app.js","env":"CUSTOMER_SERVICE=10.0.0.4:5000","net":{"if":"ukvmif0","cloner":"True","type":"inet","method":"static","addr":"10.0.0.2","mask":"16"}}'
-
-.PHONY: run_authservice_cooked_seccomp
-run_authservice_cooked_seccomp: node-authservice_cooked.seccomp
-	touch dummy
-	../../ukvm-bin.seccomp --disk=dummy --net=tap100 node-authservice_cooked.seccomp '{"cmdline":"node.seccomp /authservice/authservice_app.js","env":"CUSTOMER_SERVICE=10.0.0.4:5000","net":{"if":"ukvmif0","cloner":"True","type":"inet","method":"static","addr":"10.0.0.2","mask":"16"}}'
-
-.PHONY: run_authservice_ukvm
-run_authservice_ukvm: node.ukvm authservice.iso
-	../../ukvm-bin.vm --disk=authservice.iso --net=tap100 node.ukvm '{"cmdline":"node.ukvm /authservice/authservice_app.js","env":"CUSTOMER_SERVICE=10.0.0.4:5000","net":{"if":"ukvmif0","cloner":"True","type":"inet","method":"static","addr":"10.0.0.2","mask":"16"},"blk":{"source":"etfs","path":"/dev/ld0a","fstype":"blk","mountpoint":"/authservice"}}'
-
-.PHONY: run_authservice_seccomp
-run_authservice_seccomp: ../node.seccomp authservice.iso
-	../../ukvm-bin.seccomp --disk=authservice.iso --net=tap100 ../node.seccomp --solo5:quiet '{"cmdline":"node.seccomp /authservice/authservice_app.js","env":"CUSTOMER_SERVICE=10.0.0.4:5000","net":{"if":"ukvmif0","cloner":"True","type":"inet","method":"static","addr":"10.0.0.2","mask":"16"},"blk":{"source":"etfs","path":"/dev/ld0a","fstype":"blk","mountpoint":"/authservice"}}'
-
-# 'rumprun qemu' doesn't work with node in memory file systems. Only 'rumprun kvm' does
-.PHONY: run_authservice_hw
-run_authservice_hw: node-authservice.bin authservice.iso
-	rumprun qemu -g '-nographic -vga none' -M 256 -I if,vioif,"-net tap,script=no,ifname=tap100" -W if,inet,static,10.0.0.2/24 -b authservice.iso,/authservice -i node-authservice.bin /authservice/authservice_app.js
-
-# 'rumprun qemu' doesn't work with node in memory file systems. Only 'rumprun kvm' does
-.PHONY: run_fib_hw
-run_fib_hw: node-authservice.bin authservice.iso
-	rumprun qemu -g '-nographic -vga none' -M 256 -I if,vioif,"-net tap,script=no,ifname=tap100" -W if,inet,static,10.0.0.2/24 -b authservice.iso,/authservice -i node-authservice.bin /authservice/fib.js
+.PHONY: run_authservice_spt
+run_authservice_spt: ../$(BUILD_DIR)/node.spt  authservice.iso
+	${SOLO5_SPT} --disk=authservice.iso --net=tap100 $< '{"cmdline":"$< /authservice/authservice_app.js","env":"CUSTOMER_SERVICE=10.0.0.4:5000","net":{"if":"ukvmif0","cloner":"True","type":"inet","method":"static","addr":"10.0.0.2","mask":"16"},"blk":{"source":"etfs","path":"/dev/ld0a","fstype":"blk","mountpoint":"/authservice"}}'
 
 .PHONY: inject_ghost
 inject_ghost: | node_modules/nad Ghost-$(GHOST_VERSION)
@@ -93,6 +69,10 @@ express-$(EXPRESS_VERSION): | ../dl/express-$(EXPRESS_VERSION).tar.gz
 express-$(EXPRESS_VERSION).iso: express-$(EXPRESS_VERSION)
 	genisoimage -l -r -o $@ express-$(EXPRESS_VERSION)
 
+authservice.iso: authservice/authservice_app.js authservice/authservice/routes/index.js
+	(cd authservice && npm install --production)
+	genisoimage -l -r -o authservice.iso authservice
+
 ursa/node_modules/ursa:
 	(cd ursa && npm install --production)
 
@@ -115,4 +95,4 @@ ghost_data.img: | Ghost-$(GHOST_VERSION)
 
 .PHONY: clean
 clean:
-	rm -rf *.iso node_modules ursa/node_modules express-* Ghost-* ghost-* ghost_data.img bootstrap.js socket.io-chess nodekick *.fs hello-world.js node.ukvm authservice.fs authservice.ext2
+	rm -rf *.iso node_modules ursa/node_modules express-* Ghost-* ghost-* ghost_data.img bootstrap.js socket.io-chess nodekick *.fs hello-world.js
