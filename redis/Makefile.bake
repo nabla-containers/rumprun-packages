@@ -1,0 +1,9 @@
+
+bin/redis-server.spt: bin/redis-server
+	${RUMPRUN_BAKE} solo5_spt $@ $<
+
+bin/redis-server.hvt: bin/redis-server
+	${RUMPRUN_BAKE} solo5_hvt $@ $<
+
+bin/redis-server.bin: bin/redis-server
+	${RUMPRUN_BAKE} hw_generic $@ $<

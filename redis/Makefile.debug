@@ -1,0 +1,9 @@
+
+data.iso: data
+	genisoimage -l -r -o $@ $<
+
+run_spt: bin/redis-server.spt data.iso
+	${SOLO5_SPT} --disk=data.iso --net=tap100 $< '{"cmdline":"$< /data/conf/redis.conf","net":{"if":"ukvmif0","cloner":"True","type":"inet","method":"static","addr":"10.0.0.2","mask":"16"},"blk":{"source":"etfs","path":"/dev/ld0a","fstype":"blk","mountpoint":"/data"}}'
+
+run_hvt: bin/redis-server.hvt data.iso
+	${SOLO5_HVT} --disk=data.iso --net=tap100 $< '{"cmdline":"$< /data/conf/redis.conf","net":{"if":"ukvmif0","cloner":"True","type":"inet","method":"static","addr":"10.0.0.2","mask":"16"},"blk":{"source":"etfs","path":"/dev/ld0a","fstype":"blk","mountpoint":"/data"}}'

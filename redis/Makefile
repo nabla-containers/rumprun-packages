@@ -1,4 +1,7 @@
 include ../Makefile.inc
+include Makefile.bake
+include Makefile.debug
+
 UPSTREAM=http://download.redis.io/releases/redis-3.0.6.tar.gz
 TARBALL=$(notdir $(UPSTREAM))
 PERSISTENCE_SIZE=2048
@@ -31,28 +34,6 @@ images/data.iso: images/data/conf/*
 images/datapers.img:
 	dd if=/dev/zero of=$@ bs=1024k seek=$(PERSISTENCE_SIZE) count=0
 	mkfs.ext2 -F -q $@
-
-run_hw: bin/redis-server
-	x86_64-rumprun-netbsd-cookfs data.fs data
-	rumprun-bake -m "add data.fs" hw_generic bin/redis-server.bin bin/redis-server
-	rumprun qemu -i -g '-nographic -vga none' -M 256     -I if,vioif,'-net tap,script=no,ifname=tap100' -W if,inet,static,10.0.120.101/24 -- bin/redis-server.bin /data/conf/redis.conf
-
-data.iso: data
-	genisoimage -l -r -o $@ $<
-
-run_ukvm: bin/redis-server
-	x86_64-rumprun-netbsd-cookfs data.fs data
-	rumprun-bake -m "add data.fs" solo5_ukvm_net bin/redis-server.ukvm bin/redis-server
-	touch dummy
-	../ukvm-bin.vm --disk=dummy --net=tap100 bin/redis-server.ukvm '{"cmdline":"build/redis-server.ukvm /data/conf/redis.conf","net":{"if":"ukvmif0","cloner":"True","type":"inet","method":"static","addr":"10.0.0.2","mask":"16"}}'
-
-bin/redis-server.seccomp: bin/redis-server
-	rumprun-bake solo5_ukvm_seccomp $@ $<
-
-run_seccomp: bin/redis-server.seccomp data.iso
-	touch dummy
-	../ukvm-bin.seccomp --disk=data.iso --net=tap100 bin/redis-server.seccomp '{"cmdline":"build/redis-server.ukvm /data/conf/redis.conf","net":{"if":"ukvmif0","cloner":"True","type":"inet","method":"static","addr":"10.0.0.2","mask":"16"},"blk":{"source":"etfs","path":"/dev/ld0a","fstype":"blk","mountpoint":"/data"}}' 
-
 
 .PHONY: clean
 clean:	clean/build clean/bin
