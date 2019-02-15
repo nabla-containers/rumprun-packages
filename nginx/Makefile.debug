@@ -40,11 +40,11 @@ run_spt_perf: bin/nginx.spt images/data.iso
 nginx.spt.map: bin/nginx.spt
 	#nm bin/nginx.spt > nginx.spt.map
 	bash -c "objdump -x bin/nginx.spt | awk '{ print \$$1, g, \$$NF }' > nginx.spt.map"
-	bash -c "objdump -x ../ukvm-bin.seccomp | awk '{ print \$$1, g, \$$NF }' >> nginx.spt.map"
+	bash -c "objdump -x ${SOLO5_SPT} | awk '{ print \$$1, g, \$$NF }' >> nginx.spt.map"
 	#bash -c "objdump -x bin/nginx.spt | awk '{ print \$$1, \$$2, \$$NF }' > nginx.spt.map"
 
-.PHONY: flamegraph_seccomp
-flamegraph_seccomp: nginx.spt.map
+.PHONY: flamegraph_spt
+flamegraph_spt: nginx.spt.map
 	cp nginx.spt.map /tmp/perf-19924.map
 	perf script  | ~/research/FlameGraph/stackcollapse-perf.pl --all --addrs | ~/research/FlameGraph/flamegraph.pl --color=java > out.svg
 
