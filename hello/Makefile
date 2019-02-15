@@ -1,13 +1,20 @@
 include ../Makefile.inc
 
-all: bin/hello.seccomp
+all: bin/hello.spt bin/hello.hvt
 
-bin/hello.seccomp: build/hello.seccomp
+bin/hello.spt: build/hello.spt
 	mkdir -p bin
 	cp $< $@
 
-build/hello.seccomp: build/configure
-	$(MAKE) -C build hello.seccomp
+bin/hello.hvt: build/hello.hvt
+	mkdir -p bin
+	cp $< $@
+
+build/hello.spt: build/configure
+	$(MAKE) -C build hello.spt
+
+build/hello.hvt: build/configure
+	$(MAKE) -C build hello.hvt
 
 build/configure:
 	mkdir -p build
