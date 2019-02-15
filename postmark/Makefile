@@ -3,7 +3,7 @@ include ../Makefile.inc
 UPSTREAM=http://archive.debian.org/debian/pool/main/p/postmark/postmark_1.51.orig.tar.gz
 TARBALL=$(notdir $(UPSTREAM))
 
-all: bin/postmark
+all: bin/postmark.spt
 
 bin/postmark: build/postmark
 	mkdir -p bin
@@ -27,5 +27,5 @@ clean:
 .PHONY: distclean
 distclean: clean
 
-bin/postmark.seccomp:
-	rumprun-bake solo5_ukvm_seccomp bin/postmark.seccomp bin/postmark
+bin/postmark.spt: bin/postmark
+	${RUMPRUN_BAKE} solo5_spt $@ $<
