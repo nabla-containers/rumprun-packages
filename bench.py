@@ -3,7 +3,7 @@ import pexpect
 import os
 import time
 
-unikernel_cmd = './ukvm-bin.rr --disk=dummy --net=tap100 python3/examples/python.ukvm \'{"cmdline":"examples/python.bin -m bm_chameleon","env":"PYTHONHOME=/python"}\''
+unikernel_cmd = '../rumprun/solo5/tenders/spt/solo5-spt nodejs/build-4.3.0/node.spt'
 parser = argparse.ArgumentParser()
 parser.add_argument('--cmd', dest='cmd', help='rumprun unikernel command', default=unikernel_cmd, type=str)
 parser.add_argument('--show', dest='show', help='show output', default=False, type=bool)
@@ -16,7 +16,7 @@ for i in range(0, args.num):
     try:
         vm.expect('=== calling')
         t0 = time.time()
-        vm.expect('=== _exit')
+        vm.expect('===')
         t1 = time.time()
         print(t1 - t0)
     finally:
