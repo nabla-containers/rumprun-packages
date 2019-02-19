@@ -1,3 +1,5 @@
+all: ;
+
 images/python_benchmark.iso: bm_chameleon.py bm_tornado_http.py bm_2to3.py
 	mkdir -p images
 	rm -rf bm-env

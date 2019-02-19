@@ -1,3 +1,5 @@
+all: ;
+
 .PHONY: run_hw
 run_hw: bin/nginx.bin images/data.iso
 	${RUMPRUN} qemu -i -b images/data.iso,/data -I if,vioif,"-net tap,script=no,ifname=tap100" -W if,inet,static,10.0.0.2/24 -- $< -c /data/conf/nginx.conf

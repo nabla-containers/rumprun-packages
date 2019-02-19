@@ -1,3 +1,4 @@
+all: ;
 
 $(BUILD_DIR)/node.spt: $(NODE_BIN)
 	${RUMPRUN_BAKE} solo5_spt $@ $<

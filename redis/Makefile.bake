@@ -1,3 +1,4 @@
+all: ;
 
 bin/redis-server.spt: bin/redis-server
 	${RUMPRUN_BAKE} solo5_spt $@ $<

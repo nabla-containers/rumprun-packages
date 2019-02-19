@@ -1,3 +1,4 @@
+all: ;
 
 bin/python.spt: build/python libssl $(RUMPRUN_PKGS_DIR)/lib/libsqlite.a
 	mkdir -p bin

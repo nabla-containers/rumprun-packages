@@ -1,3 +1,4 @@
+all: ;
 
 data.iso: data
 	genisoimage -l -r -o $@ $<

@@ -1,3 +1,4 @@
+all: ;
 
 build/memcached.spt: build/memcached
 	${RUMPRUN_BAKE} solo5_spt $@ $<

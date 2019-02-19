@@ -1,3 +1,4 @@
+all: ;
 
 run_spt:
 	${SOLO5_SPT} --net=tap100 build/memcached.spt '{"cmdline":"build/memcached.bin -u root","net":{"if":"ukvmif0","cloner":"True","type":"inet","method":"static","addr":"10.0.0.2","mask":"16"}}' 
