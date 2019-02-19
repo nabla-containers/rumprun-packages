@@ -6,7 +6,7 @@ UPSTREAM=https://www.python.org/ftp/python/3.5.2/Python-3.5.2.tar.xz
 TARBALL=$(notdir $(UPSTREAM))
 ARCH=$(shell $(HOST_CC) -dumpmachine)
 
-all: libssl $(RUMPRUN_PKGS_DIR)/lib/libsqlite.a images/python.iso
+all: libssl $(RUMPRUN_PKGS_DIR)/lib/libsqlite.a $(RUMPRUN_PKGS_DIR)/lib/libffi.a  images/python.iso
 
 .NOTPARALLEL: $(RUMPRUN_PKGS_DIR)/lib/libsqlite.a
 $(RUMPRUN_PKGS_DIR)/lib/libsqlite.a:
