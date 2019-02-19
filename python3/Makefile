@@ -12,6 +12,10 @@ all: libssl $(RUMPRUN_PKGS_DIR)/lib/libsqlite.a $(RUMPRUN_PKGS_DIR)/lib/libffi.a
 $(RUMPRUN_PKGS_DIR)/lib/libsqlite.a:
 	$(MAKE) -C ../sqlite
 
+.NOTPARALLEL: $(RUMPRUN_PKGS_DIR)/lib/libffi.a
+$(RUMPRUN_PKGS_DIR)/lib/libffi.a:
+	$(MAKE) -C ../libffi
+
 build/python: build/Makefile
 	$(MAKE) -C build
 	$(MAKE) -C build install
