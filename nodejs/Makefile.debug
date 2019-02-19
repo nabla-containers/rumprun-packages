@@ -1,7 +1,7 @@
 
 run_spt: $(BUILD_DIR)/node.spt
-	${SOLO5_SPT} $< '{"cmdline":"$< -v"}'
+	${SOLO5_SPT} $<
 
 run_hvt: $(BUILD_DIR)/node.hvt
 	touch dummy
-	${SOLO5_HVT} --disk=dummy --net=tap100 $< '{"cmdline":"$< -v"}'
+	${SOLO5_HVT} --disk=dummy --net=tap100 $<
