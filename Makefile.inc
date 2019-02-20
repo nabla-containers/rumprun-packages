@@ -41,3 +41,7 @@ HOST_CC?= cc
 
 # set various defaults
 RUMPRUN_SSL?= libressl
+
+include ${RUMPRUN_MKCONF}
+SOLO5_SPT = ${SOLO5SRC}/tenders/spt/solo5-spt
+SOLO5_HVT = ${SOLO5SRC}/tenders/hvt/solo5-hvt

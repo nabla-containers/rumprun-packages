@@ -1,0 +1,11 @@
+all: ;
+
+$(BUILD_DIR)/node.spt: $(NODE_BIN)
+	${RUMPRUN_BAKE} solo5_spt $@ $<
+
+$(BUILD_DIR)/node.hvt: $(NODE_BIN)
+	${RUMPRUN_BAKE} solo5_hvt $@ $<
+
+$(BUILD_DIR)/node.bin: $(NODE_BIN)
+	${RUMPRUN_BAKE} hw_generic $@ $<
+

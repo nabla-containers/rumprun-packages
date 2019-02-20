@@ -1,0 +1,47 @@
+all: ;
+
+images/python_benchmark.iso: bm_chameleon.py bm_tornado_http.py bm_2to3.py
+	mkdir -p images
+	rm -rf bm-env
+	pyvenv-3.5 bm-env
+	bash -c "source bm-env/bin/activate; pip install tornado==4.5.3 chameleon six perf; deactivate"
+	rm -rf python
+	mkdir -p python/lib
+	cp -r build/pythondist/lib/python3.5 python/lib/.
+	cp -r bm-env/lib/python3.5/site-packages/* python/lib/python3.5/site-packages/.
+	cp bm_tornado_http.py python/lib/python3.5/site-packages/.
+	cp bm_chameleon.py python/lib/python3.5/site-packages/.
+	cp bm_2to3.py python/lib/python3.5/site-packages/.
+	$(RUMPRUN_GENISOIMAGE) -o $@ python
+
+images/example.iso: examples/main.py
+	mkdir -p images
+	rm -rf python
+	mkdir -p python/lib/
+	cp -r build/pythondist/lib/python3.5 python/lib/.
+	cp $< python/lib/python3.5/site-packages/.
+	$(RUMPRUN_GENISOIMAGE) -o $@ python
+
+run_spt: images/example.iso bin/python.spt
+	$(SOLO5_SPT) --disk=$< --net=tap100 bin/python.spt '{"cmdline":"python.spt -m main","env":"PYTHONHOME=/python","net":{"if":"ukvmif0","cloner":"True","type":"inet","method":"static","addr":"10.0.0.2","mask":"16"},"blk":{"source":"etfs","path":"/dev/ld0a","fstype":"blk","mountpoint":"/python"}}'
+
+run_hvt: images/example.iso bin/python.hvt
+	$(SOLO5_HVT) --disk=$< --net=tap100 bin/python.hvt '{"cmdline":"python.hvt -m main","env":"PYTHONHOME=/python","net":{"if":"ukvmif0","cloner":"True","type":"inet","method":"static","addr":"10.0.0.2","mask":"16"},"blk":{"source":"etfs","path":"/dev/ld0a","fstype":"blk","mountpoint":"/python"}}'
+
+run_bm_tornado_spt: images/python_benchmark.iso bin/python.spt
+	$(SOLO5_SPT) --disk=$< --net=tap100 bin/python.spt '{"cmdline":"python.spt -m bm_tornado_http","env":"PYTHONHOME=/python","net":{"if":"ukvmif0","cloner":"True","type":"inet","method":"static","addr":"10.0.0.2","mask":"16"},"blk":{"source":"etfs","path":"/dev/ld0a","fstype":"blk","mountpoint":"/python"}}'
+
+run_bm_tornado_hvt: images/python_benchmark.iso bin/python.hvt
+	$(SOLO5_HVT) --disk=$< --net=tap100 bin/python.hvt '{"cmdline":"python.spt -m bm_tornado_http","env":"PYTHONHOME=/python","net":{"if":"ukvmif0","cloner":"True","type":"inet","method":"static","addr":"10.0.0.2","mask":"16"},"blk":{"source":"etfs","path":"/dev/ld0a","fstype":"blk","mountpoint":"/python"}}'
+
+run_bm_chameleon_spt: images/python_benchmark.iso bin/python.spt
+	$(SOLO5_SPT) --disk=$< --net=tap100 bin/python.spt '{"cmdline":"python.spt -m bm_chameleon","env":"PYTHONHOME=/python","net":{"if":"ukvmif0","cloner":"True","type":"inet","method":"static","addr":"10.0.0.2","mask":"16"},"blk":{"source":"etfs","path":"/dev/ld0a","fstype":"blk","mountpoint":"/python"}}'
+
+run_bm_chameleon_hvt: images/python_benchmark.iso bin/python.hvt
+	$(SOLO5_HVT) --disk=$< --net=tap100 bin/python.hvt '{"cmdline":"python.spt -m bm_chameleon","env":"PYTHONHOME=/python","net":{"if":"ukvmif0","cloner":"True","type":"inet","method":"static","addr":"10.0.0.2","mask":"16"},"blk":{"source":"etfs","path":"/dev/ld0a","fstype":"blk","mountpoint":"/python"}}'
+
+run_bm_2to3_spt: images/python_benchmark.iso bin/python.spt
+	$(SOLO5_SPT) --disk=$< --net=tap100 bin/python.spt '{"cmdline":"python.spt -m lib2to3 -f all python/lib/python3.5/","env":"PYTHONHOME=/python","net":{"if":"ukvmif0","cloner":"True","type":"inet","method":"static","addr":"10.0.0.2","mask":"16"},"blk":{"source":"etfs","path":"/dev/ld0a","fstype":"blk","mountpoint":"/python"}}'
+
+run_bm_2to3_hvt: images/python_benchmark.iso bin/python.hvt
+	$(SOLO5_HVT) --disk=$< --net=tap100 bin/python.hvt '{"cmdline":"python.spt -m lib2to3 -f all python/lib/python3.5/","env":"PYTHONHOME=/python","net":{"if":"ukvmif0","cloner":"True","type":"inet","method":"static","addr":"10.0.0.2","mask":"16"},"blk":{"source":"etfs","path":"/dev/ld0a","fstype":"blk","mountpoint":"/python"}}'

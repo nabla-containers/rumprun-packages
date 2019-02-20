@@ -1,0 +1,10 @@
+all: ;
+
+bin/nginx.bin: bin/nginx
+	${RUMPRUN_BAKE} hw_generic $@ $<
+
+bin/nginx.hvt: bin/nginx
+	${RUMPRUN_BAKE} solo5_hvt $@ $<
+
+bin/nginx.spt: bin/nginx
+	${RUMPRUN_BAKE} solo5_spt $@ $<
