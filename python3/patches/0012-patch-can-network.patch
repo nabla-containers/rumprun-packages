@@ -1,0 +1,17 @@
+--- a/Modules/socketmodule.c.orig	2019-02-21 17:36:14.996620005 -0500
++++ b/Modules/socketmodule.c		2019-02-21 17:36:02.328627930 -0500
+@@ -1336,6 +1336,14 @@
+ #endif
+ 
+ #ifdef AF_CAN
++#undef AF_CAN
++#endif
++
++#ifdef PF_CAN
++#undef PF_CAN
++#endif
++
++#ifdef AF_CAN
+     case AF_CAN:
+     {
+         struct sockaddr_can *a = (struct sockaddr_can *)addr;
